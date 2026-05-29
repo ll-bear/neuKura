@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* ===== フォント ===== */
+.font-terminal { font-family: 'VT323', 'Courier New', monospace; }
+
+/* ===== CRTオーバーレイ ===== */
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.08) 2px,
+        rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* ===== ヴィネット ===== */
+.crt-vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.85) 100%);
+    pointer-events: none;
+    z-index: 99;
+}
+
+/* ===== スクリーンのちらつき ===== */
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    92%       { opacity: 1; }
+    93%       { opacity: 0.7; }
+    94%       { opacity: 1; }
+    96%       { opacity: 0.85; }
+    97%       { opacity: 1; }
+}
+.screen-flicker { animation: flicker 8s infinite; }
+
+/* ===== 走査線スイープ ===== */
+@keyframes scanSweep {
+    0%   { top: -3px; opacity: 0.08; }
+    50%  { opacity: 0.05; }
+    100% { top: 100%; opacity: 0.08; }
+}
+.scan-sweep {
+    position: absolute;
+    left: 0; right: 0;
+    height: 3px;
+    background: rgba(0, 255, 65, 0.12);
+    pointer-events: none;
+    z-index: 10;
+    animation: scanSweep 4s linear infinite;
+}
+
+/* ===== フェードイン ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+.animate-fadeIn { animation: fadeIn 0.4s ease forwards; }
+
+/* ===== テキストグロー ===== */
+.text-glow     { text-shadow: 0 0 8px #00ff41, 0 0 16px #00aa22; }
+.text-glow-dim { text-shadow: 0 0 4px rgba(0, 170, 34, 0.5); }
+
+/* ===== テキスト入力（ターミナル風） ===== */
+.term-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #00ff41;
+    font-family: 'VT323', monospace;
+    caret-color: #00ff41;
+    width: 100%;
+}
+.term-input::placeholder { color: #1a4a1a; }
+.term-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== タブボタン ===== */
+.tab-btn {
+    background: transparent;
+    border: 1px solid #1a4a1a;
+    font-family: 'VT323', monospace;
+    font-size: 1.125rem;
+    padding: 4px 18px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.1s;
+}
+.tab-default { color: #3a8a3a; }
+.tab-default:hover,
+.tab-active {
+    background: #0a2a0a;
+    color: #00ff41;
+    border-color: #00ff41;
+}
+
+/* ===== カテゴリボタン ===== */
+.cat-btn {
+    background: transparent;
+    border: 1px solid #0d2a0d;
+    font-family: 'VT323', monospace;
+    font-size: 0.9rem;
+    padding: 2px 10px;
+    cursor: pointer;
+    transition: all 0.1s;
+    color: #2a6a2a;
+}
+.cat-default:hover,
+.cat-active {
+    background: #050f05;
+    color: #00ff41;
+    border-color: #00aa22;
+}
+
+/* ===== ブックマーク行 ===== */
+.bm-row {
+    border: 1px solid #0d2a0d;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.1s;
+    position: relative;
+}
+.bm-row:hover {
+    background: #030f03;
+    border-color: #00ff41;
+}
+
+/* ===== 実行ボタン ===== */
+.action-btn {
+    background: #0a2a0a;
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
+    padding: 6px 28px;
+    cursor: pointer;
+    letter-spacing: 3px;
+    transition: all 0.1s;
+}
+.action-btn:hover:not(:disabled) {
+    background: #0a4a0a;
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.3);
+}
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== スクロールバー ===== */
+.scrollbar-terminal::-webkit-scrollbar       { width: 5px; }
+.scrollbar-terminal::-webkit-scrollbar-track { background: #010701; }
+.scrollbar-terminal::-webkit-scrollbar-thumb { background: #1a4a1a; }
