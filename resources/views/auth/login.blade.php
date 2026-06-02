@@ -1,154 +1,92 @@
 @extends('layouts.app')
 
 @section('content')
-<div
-    x-data="loginApp()"
-    x-init="init()"
-    class="w-full max-w-lg relative screen-flicker"
->
-    <div class="scan-sweep"></div>
 
-    {{-- ベゼル --}}
-    <div class="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] rounded-xl p-0
-                border border-[#1a1a1a]
-                shadow-[0_0_60px_rgba(0,255,65,0.08),inset_0_0_30px_rgba(0,0,0,0.8),0_20px_60px_rgba(0,0,0,0.9)]">
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
 
-        {{-- スクリーン --}}
-        <div class="bg-[#020a02] rounded-md p-2 min-h-[420px]
-                    border border-[#0a1a0a]
-                    shadow-[inset_0_0_40px_rgba(0,0,0,0.6)]
-                    relative overflow-hidden font-terminal">
-
-            {{-- ブート画面 --}}
-            <div x-show="!booted" class="text-[#00cc33] text-lg leading-loose">
-                <template x-for="(line, i) in bootLines" :key="i">
-                    <div x-text="line" class="animate-fadeIn"></div>
-                </template>
-                <span :class="blink ? 'opacity-100' : 'opacity-0'" class="transition-opacity">█</span>
+        {{-- ロゴ --}}
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center gap-3 mb-2">
+                <img src="{{ asset('webplot-icon.svg') }}" class="w-14 h-14 drop-shadow-lg" alt="webPlot">
+                <span class="text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent tracking-tight">
+                    NeuNova
+                </span>
             </div>
+            <p class="text-slate-400 text-sm tracking-wide">AI-Powered Bookmark Manager</p>
+        </div>
 
-            {{-- ログインフォーム --}}
-            <div x-show="booted" x-transition:enter="animate-fadeIn">
+        {{-- カード --}}
+        <div class="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/60 p-8">
 
-                {{-- ヘッダー --}}
-                <div class="border-b border-[#0d2a0d] pb-4 mb-6">
-                    <div class="text-[#00ff41] text-3xl tracking-[4px] text-glow leading-none">
-                        ■ WEBPLOTTEROS
-                    </div>
-                    <div class="text-[#1a5a1a] text-sm tracking-[3px] mt-1">
-                        USER AUTHENTICATION REQUIRED
+            {{-- エラー --}}
+            @if ($errors->any())
+            <div class="flex items-center gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 mb-6">
+                <svg class="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <p class="text-red-500 text-sm">{{ $errors->first() }}</p>
+            </div>
+            @endif
+
+            <form method="POST" action="{{ route('login') }}">
+                @csrf
+
+                {{-- Email --}}
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">メールアドレス</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <input type="email" name="email" value="{{ old('email') }}"
+                               placeholder="user@example.com"
+                               class="w-full pl-12 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-2xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent
+                                      transition-all"
+                               required>
                     </div>
                 </div>
 
-                {{-- エラー表示 --}}
-                @if ($errors->any())
-                <div class="bg-[#1a0000] border border-[#4a0000] px-4 py-2.5 mb-5 text-[#ff3333] text-lg tracking-widest">
-                    <span>▶ AUTH FAILED: {{ $errors->first() }}</span>
+                {{-- Password --}}
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">パスワード</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input type="password" name="password"
+                               placeholder="••••••••"
+                               class="w-full pl-12 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-2xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent
+                                      transition-all"
+                               required>
+                    </div>
                 </div>
-                @endif
 
-                {{-- フォーム --}}
-                <form method="POST" action="{{ route('login') }}">
-                    @csrf
-
-                    {{-- Email --}}
-                    <div class="mb-5">
-                        <div class="text-[#1a4a1a] text-sm tracking-widest mb-1.5">USER ID (EMAIL):</div>
-                        <div class="border border-[#1a4a1a] px-4 py-2.5 bg-[#010701] flex items-center"
-                             :class="focusField === 'email' ? 'border-[#00ff41]' : ''">
-                            <span class="text-[#00aa22] mr-3 text-xl">ID&gt;</span>
-                            <input
-                                type="email"
-                                name="email"
-                                value="{{ old('email') }}"
-                                class="term-input text-lg"
-                                placeholder="user@example.com"
-                                @focus="focusField = 'email'"
-                                @blur="focusField = ''"
-                                autocomplete="email"
-                                required
-                            >
-                            <span x-show="focusField === 'email'"
-                                  :class="blink ? 'opacity-100' : 'opacity-0'"
-                                  class="text-[#00ff41] text-xl transition-opacity">█</span>
-                        </div>
-                    </div>
-
-                    {{-- Password --}}
-                    <div class="mb-8">
-                        <div class="text-[#1a4a1a] text-sm tracking-widest mb-1.5">PASSWORD:</div>
-                        <div class="border border-[#1a4a1a] px-4 py-2.5 bg-[#010701] flex items-center"
-                             :class="focusField === 'password' ? 'border-[#00ff41]' : ''">
-                            <span class="text-[#00aa22] mr-3 text-xl">PW&gt;</span>
-                            <input
-                                type="password"
-                                name="password"
-                                class="term-input text-lg"
-                                placeholder="••••••••"
-                                @focus="focusField = 'password'"
-                                @blur="focusField = ''"
-                                autocomplete="current-password"
-                                required
-                            >
-                            <span x-show="focusField === 'password'"
-                                  :class="blink ? 'opacity-100' : 'opacity-0'"
-                                  class="text-[#00ff41] text-xl transition-opacity">█</span>
-                        </div>
-                    </div>
-
-                    {{-- ログインボタン --}}
-                    <button type="submit" class="action-btn w-full text-center tracking-[4px]">
-                        [ AUTHENTICATE ]
-                    </button>
-
-                    <div class="text-[#0d2a0d] text-xs mt-5 leading-loose">
-                        SYSTEM: BOOKMARKOS v1.0 — UNAUTHORIZED ACCESS PROHIBITED
-                    </div>
-                </form>
-
-            </div>
+                <button type="submit"
+                        class="w-full py-3.5 bg-gradient-to-r from-violet-500 to-blue-500
+                               hover:from-violet-600 hover:to-blue-600
+                               text-white font-semibold rounded-2xl shadow-lg shadow-violet-200
+                               transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0">
+                    ログイン
+                </button>
+            </form>
         </div>
 
-        {{-- モニター底面 --}}
-        <div class="flex justify-center items-center gap-2 mt-3">
-            <div class="w-1.5 h-1.5 rounded-full bg-[#00ff41] shadow-[0_0_6px_#00ff41]"></div>
-            <div class="text-[#0d2a0d] text-xs tracking-[4px]">PHOSPHOR GREEN MK-III</div>
-        </div>
-
+        <p class="text-center text-slate-400 text-xs mt-6">
+            NeuNova — AI-Powered Information Retrieval
+        </p>
     </div>
 </div>
 
-<script>
-function loginApp() {
-    return {
-        booted: false,
-        bootLines: [],
-        blink: true,
-        focusField: '',
-
-        allBootLines: [
-            'BIOS v2.41 Copyright (C) 1987',
-            'Memory Test: 640K OK',
-            'Loading BOOKMARK.SYS........',
-            'Auth module: [OK]',
-            '─────────────────────────────────',
-            'LOGIN REQUIRED.',
-        ],
-
-        init() {
-            let i = 0;
-            const timer = setInterval(() => {
-                if (i < this.allBootLines.length) {
-                    this.bootLines.push(this.allBootLines[i++]);
-                } else {
-                    clearInterval(timer);
-                    setTimeout(() => this.booted = true, 500);
-                }
-            }, 200);
-
-            setInterval(() => this.blink = !this.blink, 530);
-        },
-    }
-}
-</script>
 @endsection

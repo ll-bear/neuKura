@@ -1,362 +1,447 @@
 @extends('layouts.app')
 @section('content')
 
-<div
-    x-data="bookmarkApp()"
-    x-init="init()"
-    class="w-full max-w-5xl relative screen-flicker"
->
-    <div class="scan-sweep"></div>
+<div class="min-h-screen p-4 md:p-6" x-data="bookmarkApp()" x-init="init()">
 
-    {{-- ベゼル --}}
-    <div class="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] rounded-xl p-3
-                border border-[#1a1a1a]
-                shadow-[0_0_60px_rgba(0,255,65,0.08),inset_0_0_30px_rgba(0,0,0,0.8),0_20px_60px_rgba(0,0,0,0.9)]">
-
-        {{-- スクリーン --}}
-        <div class="bg-[#020a02] rounded-md p-4 min-h-[600px]
-                    border border-[#0a1a0a]
-                    shadow-[inset_0_0_40px_rgba(0,0,0,0.6)]
-                    relative overflow-hidden font-terminal">
-
-            {{-- ブート画面 --}}
-            <div x-show="!booted" class="text-[#00cc33] text-lg leading-loose">
-                <template x-for="(line, i) in bootLines" :key="i">
-                    <div x-text="line" class="animate-fadeIn"></div>
-                </template>
-                <span :class="blink ? 'opacity-100' : 'opacity-0'" class="transition-opacity">█</span>
+    {{-- ===== ヘッダー ===== --}}
+    <header class="max-w-5xl mx-auto mb-6">
+        <div class="bg-white/60 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 px-5 py-3
+                    flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="{{ asset('favicon.ico') }}" class="w-9 h-9" alt="webPlot">
+                <span class="text-xl font-bold bg-gradient-to-r from-violet-600 to-blue-500
+                             bg-clip-text text-transparent tracking-tight">
+                    NeuNova
+                </span>
             </div>
-
-            {{-- メインUI --}}
-            <div x-show="booted" x-transition:enter="animate-fadeIn">
-
-                {{-- ヘッダー --}}
-                <div class="border-b border-[#0d2a0d] pb-3 mb-4 flex justify-between items-start">
-                    <div>
-                        <div class="text-[#00ff41] text-3xl tracking-[4px] leading-none text-glow">■ BOOKMARKOS</div>
-                        <div class="text-[#1a5a1a] text-sm tracking-[3px] mt-1">NEURAL RETRIEVAL SYSTEM v1.0</div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-blue-400
+                                flex items-center justify-center text-white text-xs font-bold">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     </div>
-                    <div class="text-right text-[#1a4a1a] text-sm">
-                        <div>{{ now()->format('Y/m/d') }}</div>
-                        <div class="text-[#0d2a0d]">{{ auth()->user()->name }}</div>
-                        <form method="POST" action="{{ route('logout') }}" class="inline">
-                            @csrf
-                            <button type="submit" class="text-[#1a3a1a] text-xs tracking-widest hover:text-[#00ff41] transition-colors">
-                                [LOGOUT]
+                    <span class="text-sm text-slate-500 hidden sm:block">{{ auth()->user()->name }}</span>
+                </div>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit"
+                            class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        <span class="hidden sm:block"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    {{-- ===== メインコンテナ ===== --}}
+    <main class="max-w-5xl mx-auto">
+
+        {{-- タブ --}}
+        <div class="flex gap-2 mb-4 px-1">
+            <template x-for="tab in tabs" :key="tab.id">
+                <button
+                    @click="activeTab = tab.id"
+                    :class="activeTab === tab.id
+                        ? 'bg-white shadow-md text-slate-700 border-white'
+                        : 'text-slate-400 hover:text-slate-600 hover:bg-white/50 border-transparent'"
+                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium
+                           border transition-all duration-200">
+                    <span x-html="tab.icon" class="w-4 h-4"></span>
+                    <span x-text="tab.label"></span>
+                </button>
+            </template>
+        </div>
+
+        {{-- コンテンツカード --}}
+        <div class="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/60 overflow-hidden">
+
+            {{-- ===== SEARCH ===== --}}
+            <div x-show="activeTab === 'search'" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+
+                {{-- 検索バー --}}
+                <div class="p-5 border-b border-slate-100">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <input type="text" x-model="search"
+                               @input.debounce.500ms="handleSearch()"
+                               placeholder="自然言語で検索... 例：クリーム不要のパスタ"
+                               class="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
+                                      transition-all">
+                        <div class="absolute inset-y-0 right-4 flex items-center">
+                            <span x-show="search"
+                                  class="text-xs text-violet-400 font-medium"
+                                  x-text="searching ? '検索中...' : `${searchResults.length}件`"></span>
+                        </div>
+                    </div>
+
+                    {{-- カテゴリフィルター --}}
+                    <div class="flex gap-2 mt-3 flex-wrap">
+                        <template x-for="cat in ['すべて', ...categories.map(c => c.name)]" :key="cat">
+                            <button @click="selectedCategory = cat"
+                                    :class="selectedCategory === cat
+                                        ? 'bg-gradient-to-r from-violet-500 to-blue-500 text-white shadow-sm'
+                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
+                                    class="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                                    x-text="cat">
                             </button>
-                        </form>
+                        </template>
                     </div>
                 </div>
 
-                {{-- タブ --}}
-                <div class="flex gap-1 mb-5">
-                    <template x-for="tab in ['SEARCH','REGISTER','CONFIG']" :key="tab">
-                        <button
-                            @click="activeTab = tab"
-                            :class="activeTab === tab ? 'tab-active' : 'tab-default'"
-                            class="tab-btn"
-                            x-text="`[${tab}]`"
-                        ></button>
+                {{-- 検索結果 / 全件一覧 --}}
+                <div class="divide-y divide-slate-50 max-h-[520px] overflow-y-auto">
+                    <template x-if="(search ? searchResults : filtered).length === 0">
+                        <div class="flex flex-col items-center justify-center py-16 text-slate-300">
+                            <svg class="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="text-sm">見つかりませんでした</p>
+                        </div>
+                    </template>
+
+                    <template x-for="(bm, i) in (search ? searchResults : filtered)" :key="bm.id">
+                        <div class="flex items-start gap-4 px-5 py-4 hover:bg-violet-50/40 transition-colors group">
+                            {{-- ブックマークアイコン --}}
+                            <div class="shrink-0 w-9 h-9 rounded-xl
+                                        bg-gradient-to-br from-orange-400 to-pink-500
+                                        flex items-center justify-center shadow-sm mt-0.5">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between gap-2 mb-1">
+                                    <a :href="bm.url" target="_blank"
+                                       class="font-semibold text-slate-700 text-sm leading-snug
+                                              hover:text-violet-600 transition-colors line-clamp-1"
+                                       x-text="bm.title || bm.url"></a>
+                                    <span x-show="bm.category"
+                                          class="shrink-0 px-2 py-0.5 bg-violet-100 text-violet-600
+                                                 rounded-full text-xs font-medium"
+                                          x-text="bm.category?.name"></span>
+                                </div>
+                                <div class="flex items-center gap-1 mb-1.5">
+                                    <svg class="w-3 h-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
+                                    </svg>
+                                    <span class="text-xs text-slate-400 truncate" x-text="bm.url"></span>
+                                </div>
+                                <p class="text-xs text-slate-500 line-clamp-2" x-text="bm.summary"></p>
+                                {{-- RAG類似度バー（検索時のみ） --}}
+                                <div x-show="search && bm.similarity" class="mt-2 flex items-center gap-2">
+                                    <div class="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-gradient-to-r from-violet-400 to-blue-400 rounded-full"
+                                             :style="`width: ${Math.round(bm.similarity * 100)}%`"></div>
+                                    </div>
+                                    <span class="text-xs text-slate-400"
+                                          x-text="`${Math.round(bm.similarity * 100)}%`"></span>
+                                </div>
+                            </div>
+                        </div>
                     </template>
                 </div>
 
-                {{-- ========== SEARCH ========== --}}
-                <div x-show="activeTab === 'SEARCH'" x-transition:enter="animate-fadeIn">
-
-                    <div class="text-[#1a5a1a] text-sm tracking-widest mb-3">
-                        // SEMANTIC SEARCH — NATURAL LANGUAGE QUERY
-                    </div>
-
-                    {{-- 検索入力 --}}
-                    <div class="border border-[#1a4a1a] px-4 py-2.5 mb-2 flex items-center bg-[#010701]">
-                        <span class="text-[#00aa22] mr-3 text-xl">QUERY&gt;</span>
-                        <input
-                            type="text"
-                            x-model="search"
-                            @input.debounce.500ms="handleSearch()"
-                            placeholder="クリーム使わないパスタ..."
-                            class="term-input text-xl flex-1"
-                        >
-                        <span :class="blink ? 'opacity-100' : 'opacity-0'" class="text-[#00ff41] text-xl transition-opacity">█</span>
-                    </div>
-
-                    <div class="text-[#0d2a0d] text-xs mb-4 tracking-widest"
-                         x-text="searching ? 'SEARCHING...' : (search ? `${searchResults.length} RESULTS FOUND` : 'AWAITING INPUT...')">
-                    </div>
-
-                    {{-- 検索結果 --}}
-                    <div class="max-h-[440px] overflow-y-auto pr-2 space-y-2 scrollbar-terminal">
-                        <template x-if="!search">
-                            <div>
-                                <template x-for="bm in bookmarks" :key="bm.id">
-                                    <div class="bm-row">
-                                        <div class="flex justify-between items-start gap-2">
-                                            <div class="text-[#00ff41] text-lg text-glow-dim flex-1" x-text="bm.title"></div>
-                                            <span class="text-[#0a3a0a] text-xs border border-[#0a2a0a] px-2 py-0.5 shrink-0"
-                                                  x-text="bm.category?.name ?? ''"></span>
-                                        </div>
-                                        <a :href="bm.url" target="_blank"
-                                           class="text-[#1a4a1a] text-sm mt-1 block hover:text-[#00ff41] transition-colors"
-                                           x-text="`> ${bm.url}`"></a>
-                                        <div class="text-[#2a6a2a] text-base mt-1" x-text="bm.summary"></div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                        <template x-if="search">
-                            <div>
-                                <template x-if="searchResults.length === 0 && !searching">
-                                    <div class="text-[#1a4a1a] text-lg py-5">&gt; NO RECORDS FOUND_</div>
-                                </template>
-                                <template x-for="(bm, i) in searchResults" :key="bm.id">
-                                    <div class="bm-row">
-                                        <div class="flex gap-3 items-start">
-                                            <span class="text-[#0d2a0d] text-lg min-w-[30px]"
-                                                  x-text="String(i + 1).padStart(2, '0') + '.'"></span>
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-start gap-2">
-                                                    <div class="text-[#00ff41] text-lg text-glow-dim" x-text="bm.title"></div>
-                                                    <span class="text-[#0a3a0a] text-xs border border-[#0a2a0a] px-2 py-0.5 shrink-0"
-                                                          x-text="bm.category?.name ?? ''"></span>
-                                                </div>
-                                                <a :href="bm.url" target="_blank"
-                                                   class="text-[#1a4a1a] text-sm hover:text-[#00ff41] transition-colors"
-                                                   x-text="`> ${bm.url}`"></a>
-                                                <div class="text-[#2a6a2a] text-base mt-1" x-text="bm.summary"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="text-[#0d2a0d] text-xs mt-3 pt-2 border-t border-[#0a1a0a]"
-                         x-text="`TOTAL INDEXED: ${bookmarks.length} RECORDS`"></div>
+                {{-- フッター --}}
+                <div class="px-5 py-3 border-t border-slate-50 bg-slate-50/50">
+                    <p class="text-xs text-slate-400"
+                       x-text="`${bookmarks.length} 件のブックマーク`"></p>
                 </div>
+            </div>
 
-                {{-- ========== REGISTER ========== --}}
-                <div x-show="activeTab === 'REGISTER'" x-transition:enter="animate-fadeIn">
+            {{-- ===== REGISTER ===== --}}
+            <div x-show="activeTab === 'register'" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
 
-                    <div class="text-[#1a5a1a] text-sm tracking-widest mb-4">
-                        // URL REGISTRATION — SCRAPE & INDEX
-                    </div>
-
-                    {{-- URL入力 --}}
-                    <div class="mb-3">
-                        <div class="text-[#1a4a1a] text-sm tracking-widest mb-1.5">TARGET URL:</div>
-                        <div class="border border-[#1a4a1a] px-4 py-2.5 bg-[#010701] flex items-center">
-                            <span class="text-[#00aa22] mr-3 text-xl">URL&gt;</span>
-                            <input type="url" x-model="urlInput" placeholder="https://..."
-                                   :disabled="saving" class="term-input text-lg flex-1">
-                            <span :class="blink ? 'opacity-100' : 'opacity-0'" class="text-[#00ff41] text-xl transition-opacity">█</span>
-                        </div>
-                    </div>
-
-                    {{-- メモ入力 --}}
+                {{-- 登録フォーム --}}
+                <div class="p-5 border-b border-slate-100">
                     <div class="mb-4">
-                        <div class="text-[#1a4a1a] text-sm tracking-widest mb-1.5">MEMO (OPTIONAL):</div>
-                        <div class="border border-[#0d2a0d] px-4 py-2.5 bg-[#010701] flex items-center">
-                            <span class="text-[#1a5a1a] mr-3 text-xl">MEM&gt;</span>
-                            <input type="text" x-model="memoInput" placeholder="メモを入力..."
-                                   :disabled="saving" class="term-input text-[#2a8a2a] text-lg flex-1">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">URL</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m2.829-2.829a4 4 0 000-5.656l-4-4a4 4 0 00-5.656 5.656l1.102 1.102"/>
+                                </svg>
+                            </div>
+                            <input type="url" x-model="urlInput" placeholder="https://..."
+                                   :disabled="saving"
+                                   class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl
+                                          text-slate-700 placeholder-slate-300 text-sm
+                                          focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
+                                          disabled:opacity-50 transition-all">
                         </div>
                     </div>
-
-                    {{-- 処理ログ --}}
-                    <div x-show="saveMsg !== ''" x-transition
-                         class="bg-[#010f01] border border-[#0a2a0a] px-4 py-2.5 mb-4 text-[#00cc33] text-lg tracking-widest">
-                        <span :class="blink ? 'opacity-100' : 'opacity-0'" class="transition-opacity">▶ </span>
-                        <span x-text="saveMsg"></span>
+                    <div class="mb-5">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">メモ（任意）</label>
+                        <input type="text" x-model="memoInput" placeholder="メモを入力..."
+                               :disabled="saving"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
+                                      disabled:opacity-50 transition-all">
                     </div>
 
-                    <div class="flex items-center gap-4 mb-6">
-                        <button @click="handleSave()" :disabled="saving || !urlInput.trim()" class="action-btn"
-                                x-text="saving ? 'PROCESSING...' : '[ EXECUTE ]'"></button>
-                        <div class="text-[#0d2a0d] text-xs tracking-widest">
-                            PIPELINE: SCRAPE → GEMMA → VECTORIZE → INDEX
-                        </div>
-                    </div>
-
-                    {{-- ブックマーク一覧 --}}
-                    <div class="border-t border-[#0a1a0a] pt-4">
-                        <div class="text-[#1a4a1a] text-sm tracking-widest mb-3"
-                             x-text="`INDEXED RECORDS [${bookmarks.length}]`"></div>
-
-                        <div class="max-h-72 overflow-y-auto pr-2 space-y-2 scrollbar-terminal">
-                            <template x-if="bookmarks.length === 0">
-                                <div class="text-[#1a4a1a] text-lg py-3">&gt; NO RECORDS_</div>
-                            </template>
-                            <template x-for="bm in bookmarks" :key="bm.id">
-                                <div class="bm-row flex items-start gap-3">
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex justify-between items-start gap-2">
-                                            <div class="text-[#00ff41] text-lg text-glow-dim truncate" x-text="bm.title"></div>
-                                            <span class="text-[#0a3a0a] text-xs border border-[#0a2a0a] px-2 py-0.5 shrink-0"
-                                                  x-text="bm.category?.name ?? ''"></span>
-                                        </div>
-                                        <div class="text-[#1a4a1a] text-sm truncate" x-text="`> ${bm.url}`"></div>
-                                        <div class="text-[#2a6a2a] text-sm mt-1 line-clamp-1" x-text="bm.summary"></div>
+                    {{-- 処理ステップ --}}
+                    <div x-show="saving || saveMsg" x-transition class="mb-5">
+                        <div class="bg-violet-50 rounded-2xl p-4 space-y-2">
+                            <template x-for="(step, i) in processingSteps" :key="i">
+                                <div class="flex items-center gap-3">
+                                    <div :class="{
+                                            'bg-gradient-to-r from-violet-500 to-blue-500 text-white': step.done,
+                                            'bg-violet-100 text-violet-400 animate-pulse': step.active && !step.done,
+                                            'bg-slate-100 text-slate-300': !step.active && !step.done
+                                         }"
+                                         class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all">
+                                        <svg x-show="step.done" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        <div x-show="!step.done" class="w-1.5 h-1.5 rounded-full bg-current"></div>
                                     </div>
-                                    <button @click="deleteBookmark(bm.id)"
-                                            class="shrink-0 text-[#3a0a0a] border border-[#2a0a0a] px-2 py-0.5 text-sm
-                                                   hover:text-[#ff3333] hover:border-[#ff3333] transition-colors">
-                                        [DEL]
-                                    </button>
+                                    <span :class="step.active ? 'text-violet-600 font-medium' : step.done ? 'text-slate-400' : 'text-slate-300'"
+                                          class="text-xs transition-all" x-text="step.label"></span>
                                 </div>
                             </template>
                         </div>
+                    </div>
+
+                    <div x-show="saveMsg === 'done'" x-transition
+                         class="flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-2xl px-4 py-3 mb-4 text-sm font-medium">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        保存しました
+                    </div>
+
+                    <button @click="handleSave()" :disabled="saving || !urlInput.trim()"
+                            class="w-full py-3.5 bg-gradient-to-r from-violet-500 to-blue-500
+                                   hover:from-violet-600 hover:to-blue-600
+                                   text-white font-semibold rounded-2xl shadow-md shadow-violet-200
+                                   transition-all duration-200 hover:-translate-y-0.5
+                                   disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0">
+                        <span x-text="saving ? '処理中...' : 'ブックマークを追加'"></span>
+                    </button>
+                </div>
+
+                {{-- ブックマーク一覧 --}}
+                <div class="p-5">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3"
+                        x-text="`登録済み (${bookmarks.length})`"></h3>
+                    <div class="space-y-2 max-h-72 overflow-y-auto">
+                        <template x-if="bookmarks.length === 0">
+                            <p class="text-sm text-slate-300 py-4 text-center">まだ登録されていません</p>
+                        </template>
+                        <template x-for="bm in bookmarks" :key="bm.id">
+                            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl group hover:bg-violet-50/50 transition-colors">
+                                <div class="shrink-0 w-8 h-8 rounded-lg
+                                            bg-gradient-to-br from-orange-400 to-pink-500
+                                            flex items-center justify-center shadow-sm">
+                                    <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-slate-700 truncate" x-text="bm.title || bm.url"></p>
+                                    <p class="text-xs text-slate-400 truncate" x-text="bm.url"></p>
+                                </div>
+                                <span class="shrink-0 px-2 py-0.5 bg-violet-100 text-violet-500 rounded-full text-xs"
+                                      x-show="bm.category" x-text="bm.category?.name"></span>
+                                <button @click="deleteBookmark(bm.id)"
+                                        class="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
+                                               text-slate-200 hover:text-red-400 hover:bg-red-50
+                                               opacity-0 group-hover:opacity-100 transition-all">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ===== CONFIG ===== --}}
+            <div x-show="activeTab === 'config'" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+
+                {{-- 追加フォーム --}}
+                <div class="p-5 border-b border-slate-100">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                        カテゴリを追加
+                    </h3>
+                    <div class="flex gap-3">
+                        <input type="text" x-model="newCategoryName"
+                               placeholder="カテゴリ名..."
+                               @keydown.enter="addCategory()"
+                               class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
+                                      transition-all">
+                        <input type="text" x-model="newCategoryRemarks"
+                               placeholder="備考（任意）"
+                               @keydown.enter="addCategory()"
+                               class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
+                                      transition-all">
+                        <button @click="addCategory()" :disabled="!newCategoryName.trim()"
+                                class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-blue-500
+                                       hover:from-violet-600 hover:to-blue-600
+                                       text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200
+                                       disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                            追加
+                        </button>
+                    </div>
+                    <div x-show="categoryMsg" x-transition
+                         class="flex items-center gap-2 mt-3 text-emerald-600 text-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span x-text="categoryMsg"></span>
                     </div>
                 </div>
 
-                {{-- ========== CONFIG ========== --}}
-                <div x-show="activeTab === 'CONFIG'" x-transition:enter="animate-fadeIn">
-
-                    <div class="text-[#1a5a1a] text-sm tracking-widest mb-4">
-                        // CATEGORY CONFIGURATION
-                    </div>
-
-                    {{-- カテゴリ追加フォーム --}}
-                    <div class="border border-[#0d2a0d] p-4 bg-[#010701] mb-5">
-                        <div class="text-[#1a4a1a] text-sm tracking-widest mb-3">NEW CATEGORY:</div>
-                        <div class="flex gap-3 items-end">
-                            <div class="flex-1">
-                                <div class="text-[#0d2a0d] text-xs mb-1">NAME:</div>
-                                <div class="border border-[#1a4a1a] px-3 py-2 flex items-center">
-                                    <span class="text-[#00aa22] mr-2 text-lg">CAT&gt;</span>
-                                    <input type="text" x-model="newCategoryName"
-                                           placeholder="カテゴリ名..."
-                                           @keydown.enter="addCategory()"
-                                           class="term-input text-base">
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <div class="text-[#0d2a0d] text-xs mb-1">REMARKS:</div>
-                                <div class="border border-[#0d2a0d] px-3 py-2 flex items-center">
-                                    <span class="text-[#1a5a1a] mr-2 text-lg">REM&gt;</span>
-                                    <input type="text" x-model="newCategoryRemarks"
-                                           placeholder="備考（任意）..."
-                                           @keydown.enter="addCategory()"
-                                           class="term-input text-[#2a8a2a] text-base">
-                                </div>
-                            </div>
-                            <button @click="addCategory()"
-                                    :disabled="!newCategoryName.trim()"
-                                    class="action-btn text-base px-4 shrink-0">
-                                [ADD]
-                            </button>
-                        </div>
-                        <div x-show="categoryMsg !== ''" x-transition
-                             class="mt-3 text-[#00cc33] text-base tracking-widest">
-                            <span :class="blink ? 'opacity-100' : 'opacity-0'">▶ </span>
-                            <span x-text="categoryMsg"></span>
-                        </div>
-                    </div>
-
-                    {{-- カテゴリ一覧 --}}
-                    <div class="text-[#1a4a1a] text-sm tracking-widest mb-3"
-                         x-text="`REGISTERED CATEGORIES [${categories.length}]`"></div>
-
-                    <div class="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-terminal">
+                {{-- カテゴリ一覧 --}}
+                <div class="p-5">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3"
+                        x-text="`登録済みカテゴリ (${categories.length})`"></h3>
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
                         <template x-if="categories.length === 0">
-                            <div class="text-[#1a4a1a] text-lg py-3">&gt; NO CATEGORIES_</div>
+                            <p class="text-sm text-slate-300 py-4 text-center">カテゴリがありません</p>
                         </template>
                         <template x-for="cat in categories" :key="cat.id">
-                            <div class="bm-row">
+                            <div class="rounded-2xl border border-slate-100 overflow-hidden">
 
                                 {{-- 表示モード --}}
                                 <div x-show="editingCategoryId !== cat.id"
-                                     class="flex justify-between items-center gap-3">
+                                     class="flex items-center gap-4 px-4 py-3 bg-slate-50 group hover:bg-violet-50/40 transition-colors">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-violet-400 to-blue-400 shrink-0"></div>
                                     <div class="flex-1 min-w-0">
-                                        <span class="text-[#00ff41] text-lg text-glow-dim" x-text="cat.name"></span>
-                                        <span x-show="cat.remarks"
-                                              class="text-[#2a6a2a] text-sm ml-3"
-                                              x-text="cat.remarks"></span>
+                                        <span class="text-sm font-medium text-slate-700" x-text="cat.name"></span>
+                                        <span x-show="cat.remarks" class="text-xs text-slate-400 ml-2" x-text="cat.remarks"></span>
                                     </div>
-                                    <div class="flex gap-2 shrink-0">
+                                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button @click="startEdit(cat)"
-                                                class="text-[#1a4a1a] border border-[#0d2a0d] px-2 py-0.5 text-sm
-                                                       hover:text-[#00ff41] hover:border-[#00ff41] transition-colors">
-                                            [EDIT]
+                                                class="w-7 h-7 rounded-lg flex items-center justify-center
+                                                       text-slate-300 hover:text-violet-500 hover:bg-violet-50 transition-all">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                            </svg>
                                         </button>
                                         <button @click="deleteCategory(cat.id)"
-                                                class="text-[#3a0a0a] border border-[#2a0a0a] px-2 py-0.5 text-sm
-                                                       hover:text-[#ff3333] hover:border-[#ff3333] transition-colors">
-                                            [DEL]
+                                                class="w-7 h-7 rounded-lg flex items-center justify-center
+                                                       text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
                                         </button>
                                     </div>
                                 </div>
 
                                 {{-- 編集モード --}}
-                                <div x-show="editingCategoryId === cat.id" class="space-y-2">
-                                    <div class="flex gap-2 items-center">
-                                        <div class="border border-[#00ff41] px-3 py-1.5 flex items-center flex-1">
-                                            <span class="text-[#00aa22] mr-2 text-lg">CAT&gt;</span>
-                                            <input type="text" x-model="editingName"
-                                                   @keydown.enter="updateCategory(cat.id)"
-                                                   @keydown.escape="editingCategoryId = null"
-                                                   class="term-input text-base"
-                                                   x-ref="editInput">
-                                        </div>
-                                        <div class="border border-[#0d2a0d] px-3 py-1.5 flex items-center flex-1">
-                                            <span class="text-[#1a5a1a] mr-2 text-lg">REM&gt;</span>
-                                            <input type="text" x-model="editingRemarks"
-                                                   @keydown.enter="updateCategory(cat.id)"
-                                                   @keydown.escape="editingCategoryId = null"
-                                                   class="term-input text-[#2a8a2a] text-base">
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
+                                <div x-show="editingCategoryId === cat.id"
+                                     class="flex items-center gap-3 px-4 py-3 bg-violet-50">
+                                    <input type="text" x-model="editingName"
+                                           @keydown.enter="updateCategory(cat.id)"
+                                           @keydown.escape="editingCategoryId = null"
+                                           x-ref="editInput"
+                                           class="flex-1 px-3 py-1.5 bg-white border border-violet-200 rounded-xl
+                                                  text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-300">
+                                    <input type="text" x-model="editingRemarks"
+                                           @keydown.enter="updateCategory(cat.id)"
+                                           @keydown.escape="editingCategoryId = null"
+                                           class="flex-1 px-3 py-1.5 bg-white border border-violet-200 rounded-xl
+                                                  text-sm text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-300">
+                                    <div class="flex gap-2 shrink-0">
                                         <button @click="updateCategory(cat.id)"
-                                                class="text-[#00ff41] border border-[#00ff41] px-3 py-0.5 text-sm
-                                                       hover:bg-[#0a2a0a] transition-colors">
-                                            [SAVE]
-                                        </button>
+                                                class="px-3 py-1.5 bg-gradient-to-r from-violet-500 to-blue-500
+                                                       text-white text-xs font-semibold rounded-lg">保存</button>
                                         <button @click="editingCategoryId = null"
-                                                class="text-[#1a4a1a] border border-[#0d2a0d] px-3 py-0.5 text-sm
-                                                       hover:text-[#00ff41] transition-colors">
-                                            [CANCEL]
+                                                class="px-3 py-1.5 bg-slate-100 text-slate-500 text-xs font-semibold rounded-lg">
+                                            キャンセル
                                         </button>
                                     </div>
                                 </div>
-
                             </div>
                         </template>
                     </div>
-
                 </div>
-
             </div>
-        </div>
 
-        {{-- モニター底面 --}}
-        <div class="flex justify-center items-center gap-2 mt-3">
-            <div class="w-1.5 h-1.5 rounded-full bg-[#00ff41] shadow-[0_0_6px_#00ff41]"></div>
-            <div class="text-[#0d2a0d] text-xs tracking-[4px]">PHOSPHOR GREEN MK-III</div>
         </div>
-
-    </div>
+    </main>
 </div>
 
 <script>
 function bookmarkApp() {
     return {
-        // 基本状態
-        booted: false,
-        bootLines: [],
-        blink: true,
-        activeTab: 'SEARCH',
+        activeTab: 'search',
+        tabs: [
+            {
+                id: 'search',
+                label: '検索',
+                icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                       </svg>`,
+            },
+            {
+                id: 'register',
+                label: '登録',
+                icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                               d="M12 4v16m8-8H4"/>
+                       </svg>`,
+            },
+            {
+                id: 'config',
+                label: '設定',
+                icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                               d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                       </svg>`,
+            },
+        ],
+
+        // データ
+        bookmarks: @json($bookmarks->load('category')),
+        categories: @json($categories),
 
         // SEARCH
         search: '',
         searchResults: [],
         searching: false,
+        selectedCategory: 'すべて',
 
         // REGISTER
         urlInput: '',
         memoInput: '',
         saving: false,
         saveMsg: '',
+        processingSteps: [
+            { label: 'Webページを取得中...', active: false, done: false },
+            { label: 'コンテンツを解析中...', active: false, done: false },
+            { label: 'Gemmaで要約・カテゴリ判定中...', active: false, done: false },
+            { label: 'ベクトル化してインデックスに登録中...', active: false, done: false },
+        ],
 
         // CONFIG
         newCategoryName: '',
@@ -366,66 +451,40 @@ function bookmarkApp() {
         editingRemarks: '',
         categoryMsg: '',
 
-        // Laravelから初期データを受け取る
-        bookmarks: @json($bookmarks->load('category')),
-        categories: @json($categories),
+        init() {},
 
-        allBootLines: [
-            'BIOS v2.41 Copyright (C) 1987',
-            'Memory Test: 640K OK',
-            'Detecting drives... HDD0 [OK]',
-            'Loading BOOKMARK.SYS........',
-            'Initializing neural index... DONE',
-            'WELCOME TO BOOKMARKOS v1.0',
-            '─────────────────────────────────',
-        ],
-
-        init() {
-            let i = 0;
-            const timer = setInterval(() => {
-                if (i < this.allBootLines.length) {
-                    this.bootLines.push(this.allBootLines[i++]);
-                } else {
-                    clearInterval(timer);
-                    setTimeout(() => this.booted = true, 600);
-                }
-            }, 200);
-            setInterval(() => this.blink = !this.blink, 530);
+        get filtered() {
+            return this.bookmarks.filter(b => {
+                const matchCat = this.selectedCategory === 'すべて'
+                    || b.category?.name === this.selectedCategory;
+                return matchCat;
+            });
         },
 
         // ===== SEARCH =====
         async handleSearch() {
-            if (!this.search.trim()) {
-                this.searchResults = [];
-                return;
-            }
+            if (!this.search.trim()) { this.searchResults = []; return; }
             this.searching = true;
             try {
                 const res = await fetch(`/api/bookmarks/search?q=${encodeURIComponent(this.search)}`, {
                     headers: { 'Accept': 'application/json' },
                 });
                 this.searchResults = await res.json();
-            } catch (e) {
-                console.error(e);
-            } finally {
-                this.searching = false;
-            }
+            } catch (e) { console.error(e); }
+            finally { this.searching = false; }
         },
 
         // ===== REGISTER =====
         async handleSave() {
             if (!this.urlInput.trim()) return;
             this.saving = true;
+            this.saveMsg = '';
+            this.processingSteps = this.processingSteps.map(s => ({ ...s, active: false, done: false }));
 
-            const logs = [
-                'CONNECTING TO HOST...',
-                'SCRAPING PAGE DATA...',
-                'INVOKING GEMMA ENGINE...',
-                'VECTORIZING SUMMARY...',
-            ];
-            for (const msg of logs) {
-                this.saveMsg = msg;
-                await new Promise(r => setTimeout(r, 800));
+            for (let i = 0; i < this.processingSteps.length; i++) {
+                this.processingSteps[i].active = true;
+                await new Promise(r => setTimeout(r, 900));
+                this.processingSteps[i].done = true;
             }
 
             try {
@@ -440,19 +499,21 @@ function bookmarkApp() {
                 });
                 const bookmark = await res.json();
                 this.bookmarks.unshift(bookmark);
-                this.saveMsg = 'SAVED SUCCESSFULLY.';
+                this.saveMsg = 'done';
                 this.urlInput = '';
                 this.memoInput = '';
-            } catch (e) {
-                this.saveMsg = 'ERROR: CONNECTION FAILED.';
-            } finally {
+            } catch (e) { console.error(e); }
+            finally {
                 this.saving = false;
-                setTimeout(() => this.saveMsg = '', 1500);
+                setTimeout(() => {
+                    this.saveMsg = '';
+                    this.processingSteps = this.processingSteps.map(s => ({ ...s, active: false, done: false }));
+                }, 2000);
             }
         },
 
         async deleteBookmark(id) {
-            if (!confirm('DELETE THIS RECORD?')) return;
+            if (!confirm('このブックマークを削除しますか？')) return;
             try {
                 await fetch(`/api/bookmarks/${id}`, {
                     method: 'DELETE',
@@ -463,9 +524,7 @@ function bookmarkApp() {
                 });
                 this.bookmarks = this.bookmarks.filter(b => b.id !== id);
                 this.searchResults = this.searchResults.filter(b => b.id !== id);
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         },
 
         // ===== CONFIG =====
@@ -479,20 +538,15 @@ function bookmarkApp() {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({
-                        name: this.newCategoryName,
-                        remarks: this.newCategoryRemarks,
-                    }),
+                    body: JSON.stringify({ name: this.newCategoryName, remarks: this.newCategoryRemarks }),
                 });
                 const category = await res.json();
                 this.categories.push(category);
                 this.newCategoryName = '';
                 this.newCategoryRemarks = '';
-                this.categoryMsg = 'CATEGORY ADDED.';
-                setTimeout(() => this.categoryMsg = '', 1500);
-            } catch (e) {
-                console.error(e);
-            }
+                this.categoryMsg = 'カテゴリを追加しました';
+                setTimeout(() => this.categoryMsg = '', 2000);
+            } catch (e) { console.error(e); }
         },
 
         startEdit(cat) {
@@ -512,22 +566,17 @@ function bookmarkApp() {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({
-                        name: this.editingName,
-                        remarks: this.editingRemarks,
-                    }),
+                    body: JSON.stringify({ name: this.editingName, remarks: this.editingRemarks }),
                 });
                 const updated = await res.json();
                 const idx = this.categories.findIndex(c => c.id === id);
                 if (idx !== -1) this.categories[idx] = updated;
                 this.editingCategoryId = null;
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         },
 
         async deleteCategory(id) {
-            if (!confirm('DELETE THIS CATEGORY?')) return;
+            if (!confirm('このカテゴリを削除しますか？')) return;
             try {
                 await fetch(`/category/${id}`, {
                     method: 'DELETE',
@@ -537,12 +586,9 @@ function bookmarkApp() {
                     },
                 });
                 this.categories = this.categories.filter(c => c.id !== id);
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         },
     }
 }
 </script>
-
 @endsection
