@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TokenController;
-use App\Http\Controllers\Api\BookmarkController;
+use App\Http\Controllers\BookmarkController;
 
 Route::get('/', function () {
     return redirect('/login');
