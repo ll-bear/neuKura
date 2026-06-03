@@ -8,7 +8,7 @@
         {{-- ロゴ --}}
         <div class="text-center mb-8">
             <div class="inline-flex items-center gap-3 mb-2">
-                <img src="{{ asset('webplot-icon.svg') }}" class="w-14 h-14 drop-shadow-lg" alt="webPlot">
+                <img src="{{ asset('favicon.ico') }}" class="w-14 h-14 drop-shadow-lg" alt="neuKura">
                 <span class="text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent tracking-tight">
                     neuKura
                 </span>
@@ -84,7 +84,7 @@
         </div>
 
         <p class="text-center text-slate-400 text-xs mt-6">
-            NeuNova — AI-Powered Information Retrieval
+            neuKura — AI-Powered Information Retrieval
         </p>
     </div>
 </div>
