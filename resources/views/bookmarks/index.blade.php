@@ -11,7 +11,7 @@
                 <img src="{{ asset('favicon.ico') }}" class="w-9 h-9" alt="webPlot">
                 <span class="text-xl font-bold bg-gradient-to-r from-violet-600 to-blue-500
                              bg-clip-text text-transparent tracking-tight">
-                    NeuNova
+                    neuKura
                 </span>
             </div>
             <div class="flex items-center gap-4">
@@ -382,6 +382,94 @@
                         </template>
                     </div>
                 </div>
+
+                {{-- ===== トークン管理 ===== --}}
+                <div class="p-5 border-t border-slate-100">
+
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                        APIトークン管理
+                    </h3>
+
+                    {{-- 発行フォーム --}}
+                    <div class="flex gap-3 mb-4">
+                        <input type="text" x-model="newTokenName"
+                            placeholder="トークン名（例: ios-shortcut）"
+                            @keydown.enter="addToken()"
+                            class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
+                                    text-slate-700 placeholder-slate-300 text-sm
+                                    focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
+                                    transition-all">
+                        <button @click="addToken()" :disabled="!newTokenName.trim()"
+                                class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-blue-500
+                                    hover:from-violet-600 hover:to-blue-600
+                                    text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200
+                                    disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                            発行
+                        </button>
+                    </div>
+
+                    {{-- 新規発行トークンの表示（一度限り） --}}
+                    <div x-show="newlyCreatedToken" x-transition class="mb-4">
+                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                </svg>
+                                <span class="text-xs font-semibold text-amber-700">
+                                    このトークンは一度しか表示されません。必ずコピーしてください。
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <code class="flex-1 text-xs font-mono bg-white border border-amber-200 rounded-lg
+                                            px-3 py-2 text-amber-800 break-all select-all"
+                                    x-text="newlyCreatedToken"></code>
+                                <button @click="copyToken()"
+                                        class="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-amber-500
+                                            hover:bg-amber-600 text-white text-xs font-semibold
+                                            rounded-lg transition-colors">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span x-text="tokenMsg || 'コピー'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- トークン一覧 --}}
+                    <div class="space-y-2">
+                        <template x-if="tokens.length === 0">
+                            <p class="text-sm text-slate-300 py-4 text-center">トークンがありません</p>
+                        </template>
+                        <template x-for="token in tokens" :key="token.id">
+                            <div class="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-2xl
+                                        group hover:bg-violet-50/40 transition-colors">
+                                <div class="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 shrink-0"></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-slate-700" x-text="token.name"></p>
+                                    <p class="text-xs text-slate-400">
+                                        作成：<span x-text="new Date(token.created_at).toLocaleDateString('ja-JP')"></span>
+                                        <span x-show="token.last_used_at" class="ml-2">
+                                            最終使用：<span x-text="token.last_used_at ? new Date(token.last_used_at).toLocaleDateString('ja-JP') : '-'"></span>
+                                        </span>
+                                        <span x-show="!token.last_used_at" class="ml-2 text-slate-300">未使用</span>
+                                    </p>
+                                </div>
+                                <button @click="deleteToken(token.id)"
+                                        class="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
+                                            text-slate-200 hover:text-red-400 hover:bg-red-50
+                                            opacity-0 group-hover:opacity-100 transition-all">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -587,6 +675,62 @@ function bookmarkApp() {
                 });
                 this.categories = this.categories.filter(c => c.id !== id);
             } catch (e) { console.error(e); }
+        },
+
+        // ===== トークン =====
+        tokens: @json(auth()->user()->tokens()->latest()->get()),
+        newTokenName: '',
+        newlyCreatedToken: null,
+        tokenMsg: '',
+
+        async addToken() {
+            if (!this.newTokenName.trim()) return;
+            try {
+                const res = await fetch('/tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ name: this.newTokenName }),
+                });
+                const data = await res.json();
+                this.tokens.unshift(data.token);
+                this.newlyCreatedToken = data.plain_text_token;
+                this.newTokenName = '';
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        async deleteToken(id) {
+            if (!confirm('このトークンを削除しますか？\n削除すると該当のデバイスからアクセスできなくなります。')) return;
+            try {
+                await fetch(`/tokens/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+                this.tokens = this.tokens.filter(t => t.id !== id);
+                // 削除したトークンが表示中のものなら非表示に
+                this.newlyCreatedToken = null;
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        async copyToken() {
+            try {
+                await navigator.clipboard.writeText(this.newlyCreatedToken);
+                this.tokenMsg = 'コピー済み ✓';
+                setTimeout(() => this.tokenMsg = '', 2000);
+            } catch (e) {
+                // clipboard APIが使えない場合
+                this.tokenMsg = '手動でコピーしてください';
+            }
         },
     }
 }

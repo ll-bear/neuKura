@@ -10,7 +10,7 @@
             <div class="inline-flex items-center gap-3 mb-2">
                 <img src="{{ asset('webplot-icon.svg') }}" class="w-14 h-14 drop-shadow-lg" alt="webPlot">
                 <span class="text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent tracking-tight">
-                    NeuNova
+                    neuKura
                 </span>
             </div>
             <p class="text-slate-400 text-sm tracking-wide">AI-Powered Bookmark Manager</p>
