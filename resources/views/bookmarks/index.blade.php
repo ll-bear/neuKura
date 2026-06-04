@@ -125,7 +125,7 @@
                                          :alt="bm.title || previewHost(bm.url)"
                                          loading="lazy"
                                          referrerpolicy="no-referrer"
-                                         @error="onPreviewImageError(bm.id)"
+                                         x-on:error="onPreviewImageError(bm.id)"
                                          :class="bm.image_url
                                             ? 'object-cover'
                                             : 'object-contain p-12 scale-90'"
