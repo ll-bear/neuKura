@@ -7,13 +7,14 @@ use Illuminate\Support\Facades\Http;
 class OllamaService
 {
     private string $baseUrl;
-
     private string $model;
+    private string $embedModel;
 
     public function __construct()
     {
         $this->baseUrl = config('webPlot.llm_api_url');
         $this->model = config('webPlot.llm_model');
+        $this->embedModel = config('webPlot.llm_embed_model');
     }
 
     public function summarizeAndCategorize(string $text, array $categories): array
@@ -55,12 +56,59 @@ PROMPT;
     public function embed(string $text): array
     {
         $timeout = (int) config('webPlot.llm_embed_timeout', 180);
+        $model = $this->embedModel;
 
         $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/embed", [
-            'model' => $this->model,
+            'model' => $model,
             'input' => $text,
         ]);
 
+        if (! $response->successful()) {
+            logger()->error('Ollama embedding HTTP failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'model' => $model,
+                'url' => "{$this->baseUrl}/api/embed",
+            ]);
+
+            return [];
+        }
+
+        $embedding = $response->json('embeddings.0');
+
+        if (! is_array($embedding) || $embedding === []) {
+            logger()->error('Ollama embedding response invalid', [
+                'body' => $response->json(),
+                'model' => $model,
+            ]);
+
+            return [];
+        }
+
+        return $embedding;
+    }
+
+    /*
+    public function embed(string $text): array
+    {
+        $timeout = (int) config('webPlot.llm_embed_timeout', 180);
+
+        $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/embed", [
+            'model' => $this->embedModel,
+            'input' => $text,
+        ]);
+
+        if (! $response->successful()) {
+            logger()->error('Ollama embedding failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'model' => $this->embedModel,
+            ]);
+
+            return [];
+        }
+
         return $response->json('embeddings.0') ?? [];
     }
+    */
 }
