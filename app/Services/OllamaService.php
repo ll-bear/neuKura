@@ -7,18 +7,19 @@ use Illuminate\Support\Facades\Http;
 class OllamaService
 {
     private string $baseUrl;
+
     private string $model;
 
     public function __construct()
     {
         $this->baseUrl = config('webPlot.llm_api_url');
-        $this->model   = config('webPlot.llm_model');
+        $this->model = config('webPlot.llm_model');
     }
 
     public function summarizeAndCategorize(string $text, array $categories): array
     {
         $categoryList = collect($categories)
-            ->map(fn($c) => "{$c['id']}: {$c['name']}")
+            ->map(fn ($c) => "{$c['id']}: {$c['name']}")
             ->join("\n");
 
         $prompt = <<<PROMPT
@@ -37,20 +38,25 @@ class OllamaService
 }
 PROMPT;
 
-        $response = Http::timeout(60)->post("{$this->baseUrl}/api/chat", [
-            'model'    => $this->model,
+        $timeout = (int) config('webPlot.llm_chat_timeout', 120);
+
+        $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/chat", [
+            'model' => $this->model,
             'messages' => [['role' => 'user', 'content' => $prompt]],
-            'stream'   => false,
+            'stream' => false,
         ]);
 
         $content = $response->json('message.content', '{}');
         preg_match('/\{.*\}/s', $content, $matches);
+
         return json_decode($matches[0] ?? '{}', true) ?? [];
     }
 
     public function embed(string $text): array
     {
-        $response = Http::timeout(60)->post("{$this->baseUrl}/api/embed", [
+        $timeout = (int) config('webPlot.llm_embed_timeout', 180);
+
+        $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/embed", [
             'model' => $this->model,
             'input' => $text,
         ]);

@@ -536,9 +536,8 @@ function bookmarkApp() {
         saveError: '',
         processingSteps: [
             { label: 'Webページを取得中...', active: false, done: false },
-            { label: 'コンテンツを解析中...', active: false, done: false },
-            { label: 'Gemmaで要約・カテゴリ判定中...', active: false, done: false },
-            { label: 'ベクトル化してインデックスに登録中...', active: false, done: false },
+            { label: 'ブックマークを保存中...', active: false, done: false },
+            { label: '要約・カテゴリ・ベクトル化をバックグラウンドで処理中...', active: false, done: false },
         ],
 
         // CONFIG
