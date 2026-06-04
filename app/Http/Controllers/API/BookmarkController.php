@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Bookmark;
-use App\Models\Category;
 use App\Services\BookmarkService;
-use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,18 +11,8 @@ class BookmarkController
 {
     public function __construct(
         private BookmarkService $bookmarkService,
-        private CategoryService $categoryService,
     ) {
         $this->bookmarkService = $bookmarkService;
-        $this->categoryService = $categoryService;
-    }
-
-    public function index()
-    {
-        $bookmarks = $this->bookmarkService->index(auth()->id());
-        $categories = $this->categoryService->getCategories();
- 
-        return view('bookmarks.index', compact('bookmarks', 'categories'));
     }
 
     public function store(Request $request): JsonResponse
