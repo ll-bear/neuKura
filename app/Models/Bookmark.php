@@ -8,7 +8,7 @@ class Bookmark extends Model
 {
     protected $fillable = [
         'user_id', 'category_id', 'url',
-        'title', 'memo', 'summary', 'vector',
+        'title', 'image_url', 'memo', 'summary', 'vector',
     ];
 
     protected $casts = ['vector' => 'array'];

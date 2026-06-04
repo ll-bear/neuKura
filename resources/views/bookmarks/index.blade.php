@@ -100,8 +100,8 @@
                     </div>
                 </div>
 
-                {{-- 検索結果 / 全件一覧 --}}
-                <div class="divide-y divide-slate-50 max-h-[520px] overflow-y-auto">
+                {{-- 検索結果 / 全件一覧（リンクプレビューカード） --}}
+                <div class="p-4 space-y-3 max-h-[520px] overflow-y-auto">
                     <template x-if="(search ? searchResults : filtered).length === 0">
                         <div class="flex flex-col items-center justify-center py-16 text-slate-300">
                             <svg class="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,46 +112,66 @@
                         </div>
                     </template>
 
-                    <template x-for="(bm, i) in (search ? searchResults : filtered)" :key="bm.id">
-                        <div class="flex items-start gap-4 px-5 py-4 hover:bg-violet-50/40 transition-colors group">
-                            {{-- ブックマークアイコン --}}
-                            <div class="shrink-0 w-9 h-9 rounded-xl
-                                        bg-gradient-to-br from-orange-400 to-pink-500
-                                        flex items-center justify-center shadow-sm mt-0.5">
-                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                                </svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between gap-2 mb-1">
-                                    <a :href="bm.url" target="_blank"
-                                       class="font-semibold text-slate-700 text-sm leading-snug
-                                              hover:text-violet-600 transition-colors line-clamp-1"
-                                       x-text="bm.title || bm.url"></a>
-                                    <span x-show="bm.category"
-                                          class="shrink-0 px-2 py-0.5 bg-violet-100 text-violet-600
-                                                 rounded-full text-xs font-medium"
-                                          x-text="bm.category?.name"></span>
-                                </div>
-                                <div class="flex items-center gap-1 mb-1.5">
-                                    <svg class="w-3 h-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
-                                    </svg>
-                                    <span class="text-xs text-slate-400 truncate" x-text="bm.url"></span>
-                                </div>
-                                <p class="text-xs text-slate-500 line-clamp-2" x-text="bm.summary"></p>
-                                {{-- RAG類似度バー（検索時のみ） --}}
-                                <div x-show="search && bm.similarity" class="mt-2 flex items-center gap-2">
-                                    <div class="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-violet-400 to-blue-400 rounded-full"
-                                             :style="`width: ${Math.round(bm.similarity * 100)}%`"></div>
+                    <template x-for="bm in (search ? searchResults : filtered)" :key="bm.id">
+                        <article class="group relative">
+                            <a :href="bm.url" target="_blank" rel="noopener noreferrer"
+                               class="block overflow-hidden rounded-2xl border border-slate-200/90 bg-white
+                                      shadow-sm transition-all duration-200
+                                      hover:border-violet-200 hover:shadow-md active:scale-[0.99]">
+
+                                {{-- プレビュー画像 --}}
+                                <div class="relative aspect-[16/9] bg-slate-100 overflow-hidden">
+                                    <img :src="previewImage(bm)"
+                                         :alt="bm.title || previewHost(bm.url)"
+                                         loading="lazy"
+                                         referrerpolicy="no-referrer"
+                                         @error="onPreviewImageError(bm.id)"
+                                         :class="bm.image_url
+                                            ? 'object-cover'
+                                            : 'object-contain p-12 scale-90'"
+                                         class="absolute inset-0 w-full h-full bg-slate-50"
+                                         x-show="!previewImageFailed(bm.id)">
+                                    <div x-show="previewImageFailed(bm.id)"
+                                         class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
+                                        <div class="w-14 h-14 rounded-2xl bg-white/80 border border-slate-200/80
+                                                    flex items-center justify-center shadow-sm">
+                                            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
                                     </div>
-                                    <span class="text-xs text-slate-400"
-                                          x-text="`${Math.round(bm.similarity * 100)}%`"></span>
                                 </div>
-                            </div>
-                        </div>
+
+                                {{-- タイトル・本文・URL --}}
+                                <div class="p-4 space-y-2">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="text-[15px] font-semibold text-slate-800 leading-snug line-clamp-2"
+                                            x-text="bm.title || previewHost(bm.url)"></h3>
+                                        <span x-show="bm.category"
+                                              class="shrink-0 px-2 py-0.5 bg-violet-100 text-violet-600
+                                                     rounded-full text-[11px] font-medium"
+                                              x-text="bm.category?.name"></span>
+                                    </div>
+
+                                    <p class="text-sm text-slate-600 leading-relaxed line-clamp-3"
+                                       x-text="previewDescription(bm)"></p>
+
+                                    <p class="text-xs text-slate-400 truncate pt-0.5"
+                                       x-text="bm.url"></p>
+
+                                    {{-- RAG類似度（検索時のみ） --}}
+                                    <div x-show="search && bm.similarity != null" class="pt-1 flex items-center gap-2">
+                                        <div class="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-violet-400 to-blue-400 rounded-full"
+                                                 :style="`width: ${Math.round(bm.similarity * 100)}%`"></div>
+                                        </div>
+                                        <span class="text-[11px] text-slate-400 tabular-nums"
+                                              x-text="`${Math.round(bm.similarity * 100)}%`"></span>
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
                     </template>
                 </div>
 
@@ -548,7 +568,47 @@ function bookmarkApp() {
         editingRemarks: '',
         categoryMsg: '',
 
+        previewImageErrors: {},
+
         init() {},
+
+        previewHost(url) {
+            try {
+                return new URL(url).hostname.replace(/^www\./, '');
+            } catch {
+                return url;
+            }
+        },
+
+        previewImage(bm) {
+            if (bm.image_url) {
+                return bm.image_url;
+            }
+            try {
+                const host = new URL(bm.url).hostname;
+                return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=256`;
+            } catch {
+                return '';
+            }
+        },
+
+        previewDescription(bm) {
+            if (bm.summary) {
+                return bm.summary;
+            }
+            if (bm.memo) {
+                return bm.memo;
+            }
+            return '要約を生成中です。しばらくお待ちください。';
+        },
+
+        previewImageFailed(id) {
+            return Boolean(this.previewImageErrors[id]);
+        },
+
+        onPreviewImageError(id) {
+            this.previewImageErrors[id] = true;
+        },
 
         get filtered() {
             return this.bookmarks.filter(b => {

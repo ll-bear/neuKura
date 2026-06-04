@@ -29,7 +29,7 @@ class BookmarkServiceStoreTest extends TestCase
         $scraper->shouldReceive('scrape')
             ->once()
             ->with('https://example.com')
-            ->andReturn(['title' => 'Example', 'text' => 'page body']);
+            ->andReturn(['title' => 'Example', 'text' => 'page body', 'imageUrl' => 'https://example.com/og.jpg']);
 
         $ollama = Mockery::mock(OllamaService::class);
         $ollama->shouldNotReceive('summarizeAndCategorize');
@@ -41,7 +41,8 @@ class BookmarkServiceStoreTest extends TestCase
             ->with(Mockery::on(function (array $data): bool {
                 return $data['vector'] === null
                     && $data['summary'] === null
-                    && $data['category_id'] === null;
+                    && $data['category_id'] === null
+                    && $data['image_url'] === 'https://example.com/og.jpg';
             }))
             ->andReturn($bookmark);
 

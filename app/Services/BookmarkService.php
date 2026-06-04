@@ -32,6 +32,7 @@ class BookmarkService
             'category_id' => null,
             'url' => $url,
             'title' => $scraped['title'],
+            'image_url' => $scraped['imageUrl'] ?? null,
             'memo' => $memo,
             'summary' => null,
             'vector' => null,
