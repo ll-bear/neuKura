@@ -563,7 +563,7 @@ function bookmarkApp() {
             if (!this.search.trim()) { this.searchResults = []; return; }
             this.searching = true;
             try {
-                const res = await fetch(`/api/bookmarks/search?q=${encodeURIComponent(this.search)}`, {
+                const res = await fetch(`/bookmarks/search?q=${encodeURIComponent(this.search)}`, {
                     headers: { 'Accept': 'application/json' },
                 });
 
@@ -598,7 +598,7 @@ function bookmarkApp() {
             }
 
             try {
-                const res = await fetch('/api/bookmarks', {
+                const res = await fetch('/bookmarks', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -634,7 +634,7 @@ function bookmarkApp() {
         async deleteBookmark(id) {
             if (!confirm('このブックマークを削除しますか？')) return;
             try {
-                await fetch(`/api/bookmarks/${id}`, {
+                await fetch(`/bookmarks/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
