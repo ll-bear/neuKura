@@ -226,6 +226,15 @@
                         保存しました
                     </div>
 
+                    <div x-show="saveMsg === 'error'" x-transition
+                        class="flex items-center gap-2 bg-red-50 text-red-500 rounded-2xl px-4 py-3 mb-4 text-sm">
+                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                        <span x-text="saveError"></span>
+                    </div>
+
                     <button @click="handleSave()" :disabled="saving || !urlInput.trim()"
                             class="w-full py-3.5 bg-gradient-to-r from-violet-500 to-blue-500
                                    hover:from-violet-600 hover:to-blue-600
@@ -557,9 +566,22 @@ function bookmarkApp() {
                 const res = await fetch(`/api/bookmarks/search?q=${encodeURIComponent(this.search)}`, {
                     headers: { 'Accept': 'application/json' },
                 });
-                this.searchResults = await res.json();
-            } catch (e) { console.error(e); }
-            finally { this.searching = false; }
+
+                if (!res.ok) {
+                    console.error('Search failed:', res.status);
+                    this.searchResults = [];
+                    return;
+                }
+
+                const data = await res.json();
+                // 配列かどうか確認してから代入
+                this.searchResults = Array.isArray(data) ? data : [];
+            } catch (e) {
+                console.error(e);
+                this.searchResults = [];
+            } finally {
+                this.searching = false;
+            }
         },
 
         // ===== REGISTER =====
@@ -585,8 +607,17 @@ function bookmarkApp() {
                     },
                     body: JSON.stringify({ url: this.urlInput, memo: this.memoInput }),
                 });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    console.error('Save failed:', err);
+                    this.saveMsg = 'error';
+                    this.saveError = err.message ?? '保存に失敗しました';
+                    return;
+                }
+
                 const bookmark = await res.json();
-                this.bookmarks.unshift(bookmark);
+                this.bookmarks = [bookmark, ...this.bookmarks];
                 this.saveMsg = 'done';
                 this.urlInput = '';
                 this.memoInput = '';
