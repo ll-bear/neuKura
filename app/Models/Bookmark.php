@@ -13,12 +13,12 @@ class Bookmark extends Model
 
     protected $casts = ['vector' => 'array'];
 
-    public function category(): BelongsTo
+    public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
