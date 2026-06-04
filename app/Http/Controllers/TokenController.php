@@ -9,7 +9,7 @@ class TokenController
 {
     public function store(TokenRequest $request)
     {
-        $token = auth()->user()->createToken($request->all());
+        $token = auth()->user()->createToken($request->name);
  
         return response()->json([
             'token'            => $token->accessToken,
