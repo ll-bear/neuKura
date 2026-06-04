@@ -686,19 +686,22 @@ function bookmarkApp() {
         async addToken() {
             if (!this.newTokenName.trim()) return;
             try {
-                const res = await fetch('/tokens', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                    body: JSON.stringify({ name: this.newTokenName }),
-                });
+                const res = await fetch('/tokens', { ... });
+
+                // 500エラー時にクラッシュしないよう確認
+                if (!res.ok) {
+                    console.error('Token creation failed:', await res.text());
+                    return;
+                }
+
                 const data = await res.json();
-                this.tokens.unshift(data.token);
-                this.newlyCreatedToken = data.plain_text_token;
-                this.newTokenName = '';
+
+                // data.token が存在する場合のみ追加
+                if (data.token) {
+                    this.tokens = [data.token, ...this.tokens];
+                    this.newlyCreatedToken = data.plain_text_token;
+                    this.newTokenName = '';
+                }
             } catch (e) {
                 console.error(e);
             }
