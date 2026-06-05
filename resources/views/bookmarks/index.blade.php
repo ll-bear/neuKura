@@ -159,60 +159,60 @@
                             </a>
 
                             {{-- コントロールバー --}}
-                            <div class="flex items-center justify-between px-4 py-2
+                            <div class="flex items-center justify-between gap-3 px-4 py-2
                                         border-t border-slate-100 bg-slate-50/60">
 
                                 {{-- カテゴリ変更 --}}
-                                <div class="relative">
+                                <div class="flex-1 min-w-0">
                                     <button @click.stop="toggleCategoryEdit(bm.id)"
-                                            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs
-                                                   transition-colors"
+                                            class="flex items-center gap-1.5 w-full max-w-[15rem] px-2.5 py-1 rounded-lg text-xs
+                                                transition-colors"
                                             :class="bm.category
                                                 ? 'bg-violet-100 text-violet-600 hover:bg-violet-200'
                                                 : 'bg-slate-100 text-slate-400 hover:bg-slate-200'">
-                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                         </svg>
-                                        <span x-text="bm.category?.name ?? 'カテゴリなし'"></span>
-                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+                                        <span class="truncate text-left flex-1"
+                                            x-text="bm.category?.name ?? 'カテゴリなし'"></span>
+
+                                        <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M19 9l-7 7-7-7"/>
+                                                d="M19 9l-7 7-7-7"/>
                                         </svg>
                                     </button>
-
-                                    {{-- カテゴリドロップダウン --}}
-                                    <div x-show="editingBookmarkId === bm.id"
-                                         @click.outside="editingBookmarkId = null"
-                                         x-transition
-                                         class="absolute bottom-full left-0 mb-1 w-40 bg-white rounded-xl
-                                                shadow-lg border border-slate-200 overflow-hidden z-30">
-                                        <button @click.stop="updateBookmarkCategory(bm.id, null)"
-                                                class="w-full text-left px-3 py-2 text-xs text-slate-400
-                                                       hover:bg-slate-50 transition-colors">
-                                            カテゴリなし
-                                        </button>
-                                        <template x-for="cat in categories" :key="cat.id">
-                                            <button @click.stop="updateBookmarkCategory(bm.id, cat.id)"
-                                                    class="w-full text-left px-3 py-2 text-xs text-slate-700
-                                                           hover:bg-violet-50 hover:text-violet-600 transition-colors flex items-center gap-2">
-                                                <div class="w-2 h-2 rounded-full bg-gradient-to-br from-violet-400 to-blue-400"></div>
-                                                <span x-text="cat.name"></span>
-                                            </button>
-                                        </template>
-                                    </div>
                                 </div>
 
                                 {{-- 削除ボタン --}}
                                 <button @click.stop="deleteBookmark(bm.id)"
-                                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs
-                                               text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
+                                        class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs
+                                            text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors">
+                                    ...
                                     削除
                                 </button>
+                            </div>
+
+                            {{-- カテゴリドロップダウン：カード内に展開 --}}
+                            <div x-show="editingBookmarkId === bm.id"
+                                @click.outside="editingBookmarkId = null"
+                                x-transition
+                                class="mx-4 mb-3 rounded-xl bg-white shadow-sm border border-slate-200 overflow-hidden">
+                                <button @click.stop="updateBookmarkCategory(bm.id, null)"
+                                        class="w-full text-left px-3 py-2 text-xs text-slate-400
+                                            hover:bg-slate-50 transition-colors">
+                                    カテゴリなし
+                                </button>
+
+                                <template x-for="cat in categories" :key="cat.id">
+                                    <button @click.stop="updateBookmarkCategory(bm.id, cat.id)"
+                                            class="w-full text-left px-3 py-2 text-xs text-slate-700
+                                                hover:bg-violet-50 hover:text-violet-600 transition-colors flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-gradient-to-br from-violet-400 to-blue-400 shrink-0"></div>
+                                        <span class="truncate" x-text="cat.name"></span>
+                                    </button>
+                                </template>
                             </div>
                         </article>
                     </template>
