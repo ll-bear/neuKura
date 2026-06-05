@@ -32,7 +32,7 @@ class ScraperService
 
         // OGP image
         preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\']/si', $html, $imageMatch);
-        $imageUrl = $imageMatch[1] ?? '';
+        $imageUrl = isset($imageMatch[1]) ? str_replace('http://', 'https://', $imageMatch[1]) : '';
 
         // 本文抽出（script/style除去）
         $text = preg_replace('/<script[^>]*>.*?<\/script>/si', '', $html);
