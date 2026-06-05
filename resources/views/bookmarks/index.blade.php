@@ -117,7 +117,7 @@
                             {{-- リンクエリア --}}
                             <a :href="bm.url" target="_blank" rel="noopener noreferrer" class="block">
                                 {{-- プレビュー画像 --}}
-                                <div class="relative aspect-video bg-slate-100 overflow-hidden">
+                                <div class="relative aspect-video bg-slate-100 overflow-hidden rounded-t-2xl">
                                     <img :src="previewImage(bm)"
                                          :alt="bm.title"
                                          loading="lazy"
@@ -160,12 +160,12 @@
 
                             {{-- コントロールバー --}}
                             <div class="flex items-center justify-between gap-3 px-4 py-2
-                                        border-t border-slate-100 bg-slate-50/60">
+                                        border-t border-slate-100 bg-slate-50/60" rounded-b-2xl>
 
                                 {{-- カテゴリ変更 --}}
                                 <div class="flex-1 min-w-0">
                                     <button @click.stop="toggleCategoryEdit(bm.id)"
-                                            class="flex items-center gap-1.5 w-full max-w-[6rem] px-2.5 py-1 rounded-lg text-xs
+                                            class="flex items-center gap-1.5 w-full max-w-[8rem] px-2.5 py-1 rounded-lg text-xs
                                                 transition-colors"
                                             :class="bm.category
                                                 ? 'bg-violet-100 text-violet-600 hover:bg-violet-200'
