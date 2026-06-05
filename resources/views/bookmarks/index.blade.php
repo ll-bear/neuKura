@@ -165,7 +165,7 @@
                                 {{-- カテゴリ変更 --}}
                                 <div class="flex-1 min-w-0">
                                     <button @click.stop="toggleCategoryEdit(bm.id)"
-                                            class="flex items-center gap-1.5 w-full max-w-[15rem] px-2.5 py-1 rounded-lg text-xs
+                                            class="flex items-center gap-1.5 w-full max-w-[8rem] px-2.5 py-1 rounded-lg text-xs
                                                 transition-colors"
                                             :class="bm.category
                                                 ? 'bg-violet-100 text-violet-600 hover:bg-violet-200'
