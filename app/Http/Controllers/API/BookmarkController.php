@@ -31,6 +31,21 @@ class BookmarkController
         return response()->json($bookmark->load('category'), 201);
     }
 
+    public function update(Request $request, Bookmark $bookmark): JsonResponse
+    {
+        $validated = $request->validate([
+            'category_id' => 'nullable|exists:categories,id',
+        ]);
+
+        $bookmark = $this->bookmarkService->update(
+            auth()->id(),
+            $bookmark,
+            $validated
+        );
+
+        return response()->json($bookmark->load('category'));
+    }
+
     public function search(Request $request): JsonResponse
     {
         $request->validate(['q' => 'required|string|max:200']);

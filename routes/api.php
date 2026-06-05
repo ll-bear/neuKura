@@ -16,5 +16,5 @@ use App\Http\Controllers\API\BookmarkController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('bookmarks/search', [BookmarkController::class, 'search']);
-    Route::apiResource('bookmarks', BookmarkController::class, ['only' => ['store', 'destroy']]);
+    Route::apiResource('bookmarks', BookmarkController::class, ['only' => ['store', 'update', 'destroy']]);
 });

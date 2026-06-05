@@ -43,6 +43,13 @@ class BookmarkService
         return $bookmark;
     }
 
+    public function update(int $userId, Bookmark $bookmark, array $data): Bookmark
+    {
+        abort_if($bookmark->user_id !== $userId, 403);
+        $bookmark->update($data);
+        return $bookmark->fresh();
+    }
+
     public function search(int $userId, string $query): Collection
     {
         $queryVector = $this->ollamaService->embed($query);

@@ -8,7 +8,7 @@
         <div class="bg-white/60 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 px-5 py-3
                     flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('favicon.ico') }}" class="w-9 h-9" alt="webPlot">
+                <img src="{{ asset('favicon.ico') }}" class="w-9 h-9" alt="neuKura">
                 <span class="text-xl font-bold bg-gradient-to-r from-violet-600 to-blue-500
                              bg-clip-text text-transparent tracking-tight">
                     neuKura
@@ -30,7 +30,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        <span class="hidden sm:block"></span>
                     </button>
                 </form>
             </div>
@@ -80,8 +79,7 @@
                                       focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
                                       transition-all">
                         <div class="absolute inset-y-0 right-4 flex items-center">
-                            <span x-show="search"
-                                  class="text-xs text-violet-400 font-medium"
+                            <span x-show="search" class="text-xs text-violet-400 font-medium"
                                   x-text="searching ? '検索中...' : `${searchResults.length}件`"></span>
                         </div>
                     </div>
@@ -100,8 +98,8 @@
                     </div>
                 </div>
 
-                {{-- 検索結果 / 全件一覧（リンクプレビューカード） --}}
-                <div class="p-4 space-y-3 max-h-[520px] overflow-y-auto">
+                {{-- ブックマーク一覧 --}}
+                <div class="p-4 space-y-3 max-h-[600px] overflow-y-auto">
                     <template x-if="(search ? searchResults : filtered).length === 0">
                         <div class="flex flex-col items-center justify-center py-16 text-slate-300">
                             <svg class="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -113,27 +111,24 @@
                     </template>
 
                     <template x-for="bm in (search ? searchResults : filtered)" :key="bm.id">
-                        <article class="group relative">
-                            <a :href="bm.url" target="_blank" rel="noopener noreferrer"
-                               class="block overflow-hidden rounded-2xl border border-slate-200/90 bg-white
-                                      shadow-sm transition-all duration-200
-                                      hover:border-violet-200 hover:shadow-md active:scale-[0.99]">
+                        <article class="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden
+                                        hover:border-violet-200 hover:shadow-md transition-all duration-200">
 
+                            {{-- リンクエリア --}}
+                            <a :href="bm.url" target="_blank" rel="noopener noreferrer" class="block">
                                 {{-- プレビュー画像 --}}
                                 <div class="relative aspect-video bg-slate-100 overflow-hidden">
                                     <img :src="previewImage(bm)"
-                                         :alt="bm.title || previewHost(bm.url)"
+                                         :alt="bm.title"
                                          loading="lazy"
                                          referrerpolicy="no-referrer"
                                          x-on:error="onPreviewImageError(bm.id)"
-                                         :class="bm.image_url
-                                            ? 'object-cover'
-                                            : 'object-contain p-12 scale-90'"
+                                         :class="bm.image_url ? 'object-cover' : 'object-contain p-12 scale-90'"
                                          class="absolute inset-0 w-full h-full bg-slate-50"
                                          x-show="!previewImageFailed(bm.id)">
                                     <div x-show="previewImageFailed(bm.id)"
-                                         class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
-                                        <div class="w-14 h-14 rounded-2xl bg-white/80 border border-slate-200/80
+                                         class="absolute inset-0 flex items-center justify-center text-slate-300">
+                                        <div class="w-14 h-14 rounded-2xl bg-white/80 border border-slate-200
                                                     flex items-center justify-center shadow-sm">
                                             <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -143,22 +138,13 @@
                                     </div>
                                 </div>
 
-                                {{-- タイトル・本文・URL --}}
-                                <div class="p-4 space-y-2">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <h3 class="text-[15px] font-semibold text-slate-800 leading-snug line-clamp-2"
-                                            x-text="bm.title || previewHost(bm.url)"></h3>
-                                        <span x-show="bm.category"
-                                              class="shrink-0 px-2 py-0.5 bg-violet-100 text-violet-600
-                                                     rounded-full text-[11px] font-medium"
-                                              x-text="bm.category?.name"></span>
-                                    </div>
-
-                                    <p class="text-sm text-slate-600 leading-relaxed line-clamp-3"
-                                       x-text="previewDescription(bm)"></p>
-
-                                    <p class="text-xs text-slate-400 truncate pt-0.5"
-                                       x-text="bm.url"></p>
+                                {{-- テキスト --}}
+                                <div class="p-4 space-y-1.5">
+                                    <h3 class="text-[15px] font-semibold text-slate-800 leading-snug line-clamp-2"
+                                        x-text="bm.title || previewHost(bm.url)"></h3>
+                                    <p class="text-sm text-slate-500 leading-relaxed line-clamp-2"
+                                       x-text="bm.summary || bm.memo || '要約を生成中です...'"></p>
+                                    <p class="text-xs text-slate-400 truncate" x-text="bm.url"></p>
 
                                     {{-- RAG類似度（検索時のみ） --}}
                                     <div x-show="search && bm.similarity != null" class="pt-1 flex items-center gap-2">
@@ -171,6 +157,63 @@
                                     </div>
                                 </div>
                             </a>
+
+                            {{-- コントロールバー --}}
+                            <div class="flex items-center justify-between px-4 py-2
+                                        border-t border-slate-100 bg-slate-50/60">
+
+                                {{-- カテゴリ変更 --}}
+                                <div class="relative">
+                                    <button @click.stop="toggleCategoryEdit(bm.id)"
+                                            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs
+                                                   transition-colors"
+                                            :class="bm.category
+                                                ? 'bg-violet-100 text-violet-600 hover:bg-violet-200'
+                                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'">
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                        </svg>
+                                        <span x-text="bm.category?.name ?? 'カテゴリなし'"></span>
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+
+                                    {{-- カテゴリドロップダウン --}}
+                                    <div x-show="editingBookmarkId === bm.id"
+                                         @click.outside="editingBookmarkId = null"
+                                         x-transition
+                                         class="absolute bottom-full left-0 mb-1 w-40 bg-white rounded-xl
+                                                shadow-lg border border-slate-200 overflow-hidden z-10">
+                                        <button @click.stop="updateBookmarkCategory(bm.id, null)"
+                                                class="w-full text-left px-3 py-2 text-xs text-slate-400
+                                                       hover:bg-slate-50 transition-colors">
+                                            カテゴリなし
+                                        </button>
+                                        <template x-for="cat in categories" :key="cat.id">
+                                            <button @click.stop="updateBookmarkCategory(bm.id, cat.id)"
+                                                    class="w-full text-left px-3 py-2 text-xs text-slate-700
+                                                           hover:bg-violet-50 hover:text-violet-600 transition-colors flex items-center gap-2">
+                                                <div class="w-2 h-2 rounded-full bg-gradient-to-br from-violet-400 to-blue-400"></div>
+                                                <span x-text="cat.name"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                {{-- 削除ボタン --}}
+                                <button @click.stop="deleteBookmark(bm.id)"
+                                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs
+                                               text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    削除
+                                </button>
+                            </div>
                         </article>
                     </template>
                 </div>
@@ -182,155 +225,28 @@
                 </div>
             </div>
 
-            {{-- ===== REGISTER ===== --}}
-            <div x-show="activeTab === 'register'" x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
-
-                {{-- 登録フォーム --}}
-                <div class="p-5 border-b border-slate-100">
-                    <div class="mb-4">
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">URL</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m2.829-2.829a4 4 0 000-5.656l-4-4a4 4 0 00-5.656 5.656l1.102 1.102"/>
-                                </svg>
-                            </div>
-                            <input type="url" x-model="urlInput" placeholder="https://..."
-                                   :disabled="saving"
-                                   class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl
-                                          text-slate-700 placeholder-slate-300 text-sm
-                                          focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
-                                          disabled:opacity-50 transition-all">
-                        </div>
-                    </div>
-                    <div class="mb-5">
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">メモ（任意）</label>
-                        <input type="text" x-model="memoInput" placeholder="メモを入力..."
-                               :disabled="saving"
-                               class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl
-                                      text-slate-700 placeholder-slate-300 text-sm
-                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
-                                      disabled:opacity-50 transition-all">
-                    </div>
-
-                    {{-- 処理ステップ --}}
-                    <div x-show="saving || saveMsg" x-transition class="mb-5">
-                        <div class="bg-violet-50 rounded-2xl p-4 space-y-2">
-                            <template x-for="(step, i) in processingSteps" :key="i">
-                                <div class="flex items-center gap-3">
-                                    <div :class="{
-                                            'bg-gradient-to-r from-violet-500 to-blue-500 text-white': step.done,
-                                            'bg-violet-100 text-violet-400 animate-pulse': step.active && !step.done,
-                                            'bg-slate-100 text-slate-300': !step.active && !step.done
-                                         }"
-                                         class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all">
-                                        <svg x-show="step.done" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                        <div x-show="!step.done" class="w-1.5 h-1.5 rounded-full bg-current"></div>
-                                    </div>
-                                    <span :class="step.active ? 'text-violet-600 font-medium' : step.done ? 'text-slate-400' : 'text-slate-300'"
-                                          class="text-xs transition-all" x-text="step.label"></span>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <div x-show="saveMsg === 'done'" x-transition
-                         class="flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-2xl px-4 py-3 mb-4 text-sm font-medium">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        保存しました
-                    </div>
-
-                    <div x-show="saveMsg === 'error'" x-transition
-                        class="flex items-center gap-2 bg-red-50 text-red-500 rounded-2xl px-4 py-3 mb-4 text-sm">
-                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                        </svg>
-                        <span x-text="saveError"></span>
-                    </div>
-
-                    <button @click="handleSave()" :disabled="saving || !urlInput.trim()"
-                            class="w-full py-3.5 bg-gradient-to-r from-violet-500 to-blue-500
-                                   hover:from-violet-600 hover:to-blue-600
-                                   text-white font-semibold rounded-2xl shadow-md shadow-violet-200
-                                   transition-all duration-200 hover:-translate-y-0.5
-                                   disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0">
-                        <span x-text="saving ? '処理中...' : 'ブックマークを追加'"></span>
-                    </button>
-                </div>
-
-                {{-- ブックマーク一覧 --}}
-                <div class="p-5">
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3"
-                        x-text="`登録済み (${bookmarks.length})`"></h3>
-                    <div class="space-y-2 max-h-72 overflow-y-auto">
-                        <template x-if="bookmarks.length === 0">
-                            <p class="text-sm text-slate-300 py-4 text-center">まだ登録されていません</p>
-                        </template>
-                        <template x-for="bm in bookmarks" :key="bm.id">
-                            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl group hover:bg-violet-50/50 transition-colors">
-                                <div class="shrink-0 w-8 h-8 rounded-lg
-                                            bg-gradient-to-br from-orange-400 to-pink-500
-                                            flex items-center justify-center shadow-sm">
-                                    <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                                    </svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-slate-700 truncate" x-text="bm.title || bm.url"></p>
-                                    <p class="text-xs text-slate-400 truncate" x-text="bm.url"></p>
-                                </div>
-                                <span class="shrink-0 px-2 py-0.5 bg-violet-100 text-violet-500 rounded-full text-xs"
-                                      x-show="bm.category" x-text="bm.category?.name"></span>
-                                <button @click="deleteBookmark(bm.id)"
-                                        class="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
-                                               text-slate-200 hover:text-red-400 hover:bg-red-50
-                                               opacity-0 group-hover:opacity-100 transition-all">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-
             {{-- ===== CONFIG ===== --}}
             <div x-show="activeTab === 'config'" x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
 
-                {{-- 追加フォーム --}}
+                {{-- カテゴリ追加フォーム --}}
                 <div class="p-5 border-b border-slate-100">
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                        カテゴリを追加
-                    </h3>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">カテゴリを追加</h3>
                     <div class="flex gap-3">
-                        <input type="text" x-model="newCategoryName"
-                               placeholder="カテゴリ名..."
+                        <input type="text" x-model="newCategoryName" placeholder="カテゴリ名..."
                                @keydown.enter="addCategory()"
                                class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
                                       text-slate-700 placeholder-slate-300 text-sm
-                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
-                                      transition-all">
-                        <input type="text" x-model="newCategoryRemarks"
-                               placeholder="備考（任意）"
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent transition-all">
+                        <input type="text" x-model="newCategoryRemarks" placeholder="備考（任意）"
                                @keydown.enter="addCategory()"
                                class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
                                       text-slate-700 placeholder-slate-300 text-sm
-                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
-                                      transition-all">
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent transition-all">
                         <button @click="addCategory()" :disabled="!newCategoryName.trim()"
                                 class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-blue-500
-                                       hover:from-violet-600 hover:to-blue-600
-                                       text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200
+                                       hover:from-violet-600 hover:to-blue-600 text-white text-sm font-semibold
+                                       rounded-xl shadow-sm shadow-violet-200
                                        disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                             追加
                         </button>
@@ -345,19 +261,19 @@
                 </div>
 
                 {{-- カテゴリ一覧 --}}
-                <div class="p-5">
+                <div class="p-5 border-b border-slate-100">
                     <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3"
                         x-text="`登録済みカテゴリ (${categories.length})`"></h3>
-                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
                         <template x-if="categories.length === 0">
                             <p class="text-sm text-slate-300 py-4 text-center">カテゴリがありません</p>
                         </template>
                         <template x-for="cat in categories" :key="cat.id">
                             <div class="rounded-2xl border border-slate-100 overflow-hidden">
-
                                 {{-- 表示モード --}}
                                 <div x-show="editingCategoryId !== cat.id"
-                                     class="flex items-center gap-4 px-4 py-3 bg-slate-50 group hover:bg-violet-50/40 transition-colors">
+                                     class="flex items-center gap-4 px-4 py-3 bg-slate-50 group
+                                            hover:bg-violet-50/40 transition-colors">
                                     <div class="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-violet-400 to-blue-400 shrink-0"></div>
                                     <div class="flex-1 min-w-0">
                                         <span class="text-sm font-medium text-slate-700" x-text="cat.name"></span>
@@ -382,7 +298,6 @@
                                         </button>
                                     </div>
                                 </div>
-
                                 {{-- 編集モード --}}
                                 <div x-show="editingCategoryId === cat.id"
                                      class="flex items-center gap-3 px-4 py-3 bg-violet-50">
@@ -412,54 +327,45 @@
                     </div>
                 </div>
 
-                {{-- ===== トークン管理 ===== --}}
-                <div class="p-5 border-t border-slate-100">
-
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                        APIトークン管理
-                    </h3>
-
-                    {{-- 発行フォーム --}}
+                {{-- トークン管理 --}}
+                <div class="p-5">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">APIトークン管理</h3>
                     <div class="flex gap-3 mb-4">
                         <input type="text" x-model="newTokenName"
-                            placeholder="トークン名（例: ios-shortcut）"
-                            @keydown.enter="addToken()"
-                            class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
-                                    text-slate-700 placeholder-slate-300 text-sm
-                                    focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
-                                    transition-all">
+                               placeholder="トークン名（例: ios-shortcut）"
+                               @keydown.enter="addToken()"
+                               class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl
+                                      text-slate-700 placeholder-slate-300 text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent transition-all">
                         <button @click="addToken()" :disabled="!newTokenName.trim()"
                                 class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-blue-500
-                                    hover:from-violet-600 hover:to-blue-600
-                                    text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200
-                                    disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                       hover:from-violet-600 hover:to-blue-600 text-white text-sm font-semibold
+                                       rounded-xl shadow-sm shadow-violet-200
+                                       disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                             発行
                         </button>
                     </div>
 
-                    {{-- 新規発行トークンの表示（一度限り） --}}
+                    {{-- 新規トークン表示 --}}
                     <div x-show="newlyCreatedToken" x-transition class="mb-4">
                         <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                                 </svg>
-                                <span class="text-xs font-semibold text-amber-700">
-                                    このトークンは一度しか表示されません。必ずコピーしてください。
-                                </span>
+                                <span class="text-xs font-semibold text-amber-700">このトークンは一度しか表示されません。必ずコピーしてください。</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <code class="flex-1 text-xs font-mono bg-white border border-amber-200 rounded-lg
-                                            px-3 py-2 text-amber-800 break-all select-all"
-                                    x-text="newlyCreatedToken"></code>
+                                             px-3 py-2 text-amber-800 break-all select-all"
+                                      x-text="newlyCreatedToken"></code>
                                 <button @click="copyToken()"
                                         class="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-amber-500
-                                            hover:bg-amber-600 text-white text-xs font-semibold
-                                            rounded-lg transition-colors">
+                                               hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors">
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                     </svg>
                                     <span x-text="tokenMsg || 'コピー'"></span>
                                 </button>
@@ -481,26 +387,26 @@
                                     <p class="text-xs text-slate-400">
                                         作成：<span x-text="new Date(token.created_at).toLocaleDateString('ja-JP')"></span>
                                         <span x-show="token.last_used_at" class="ml-2">
-                                            最終使用：<span x-text="token.last_used_at ? new Date(token.last_used_at).toLocaleDateString('ja-JP') : '-'"></span>
+                                            最終使用：<span x-text="token.last_used_at ? new Date(token.last_used_at).toLocaleDateString('ja-JP') : ''"></span>
                                         </span>
                                         <span x-show="!token.last_used_at" class="ml-2 text-slate-300">未使用</span>
                                     </p>
                                 </div>
                                 <button @click="deleteToken(token.id)"
                                         class="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
-                                            text-slate-200 hover:text-red-400 hover:bg-red-50
-                                            opacity-0 group-hover:opacity-100 transition-all">
+                                               text-slate-200 hover:text-red-400 hover:bg-red-50
+                                               opacity-0 group-hover:opacity-100 transition-all">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
                                 </button>
                             </div>
                         </template>
                     </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     </main>
 </div>
@@ -516,14 +422,6 @@ function bookmarkApp() {
                 icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                       </svg>`,
-            },
-            {
-                id: 'register',
-                label: '登録',
-                icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                               d="M12 4v16m8-8H4"/>
                        </svg>`,
             },
             {
@@ -547,18 +445,8 @@ function bookmarkApp() {
         searchResults: [],
         searching: false,
         selectedCategory: 'すべて',
-
-        // REGISTER
-        urlInput: '',
-        memoInput: '',
-        saving: false,
-        saveMsg: '',
-        saveError: '',
-        processingSteps: [
-            { label: 'Webページを取得中...', active: false, done: false },
-            { label: 'ブックマークを保存中...', active: false, done: false },
-            { label: '要約・カテゴリ・ベクトル化をバックグラウンドで処理中...', active: false, done: false },
-        ],
+        editingBookmarkId: null,
+        previewImageErrors: [],
 
         // CONFIG
         newCategoryName: '',
@@ -568,55 +456,36 @@ function bookmarkApp() {
         editingRemarks: '',
         categoryMsg: '',
 
-        previewImageErrors: [],
+        // TOKEN
+        tokens: @json(auth()->user()->tokens()->latest()->get()),
+        newTokenName: '',
+        newlyCreatedToken: null,
+        tokenMsg: '',
 
         init() {},
 
+        get filtered() {
+            return this.bookmarks.filter(b => {
+                return this.selectedCategory === 'すべて'
+                    || b.category?.name === this.selectedCategory;
+            });
+        },
+
         previewHost(url) {
-            try {
-                return new URL(url).hostname.replace(/^www\./, '');
-            } catch {
-                return url;
-            }
+            try { return new URL(url).hostname.replace(/^www\./, ''); }
+            catch { return url; }
         },
 
         previewImage(bm) {
-            if (bm.image_url) {
-                return bm.image_url;
-            }
+            if (bm.image_url) return bm.image_url;
             try {
                 const host = new URL(bm.url).hostname;
                 return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=256`;
-            } catch {
-                return '';
-            }
+            } catch { return ''; }
         },
 
-        previewDescription(bm) {
-            if (bm.summary) {
-                return bm.summary;
-            }
-            if (bm.memo) {
-                return bm.memo;
-            }
-            return '要約を生成中です。しばらくお待ちください。';
-        },
-
-        previewImageFailed(id) {
-            return this.previewImageErrors.includes(id);
-        },
-
-        onPreviewImageError(id) {
-            this.previewImageErrors = [...this.previewImageErrors, id];
-        },
-
-        get filtered() {
-            return this.bookmarks.filter(b => {
-                const matchCat = this.selectedCategory === 'すべて'
-                    || b.category?.name === this.selectedCategory;
-                return matchCat;
-            });
-        },
+        previewImageFailed(id) { return this.previewImageErrors.includes(id); },
+        onPreviewImageError(id) { this.previewImageErrors = [...this.previewImageErrors, id]; },
 
         // ===== SEARCH =====
         async handleSearch() {
@@ -626,15 +495,8 @@ function bookmarkApp() {
                 const res = await fetch(`/api/bookmarks/search?q=${encodeURIComponent(this.search)}`, {
                     headers: { 'Accept': 'application/json' },
                 });
-
-                if (!res.ok) {
-                    console.error('Search failed:', res.status);
-                    this.searchResults = [];
-                    return;
-                }
-
+                if (!res.ok) { this.searchResults = []; return; }
                 const data = await res.json();
-                // 配列かどうか確認してから代入
                 this.searchResults = Array.isArray(data) ? data : [];
             } catch (e) {
                 console.error(e);
@@ -644,50 +506,29 @@ function bookmarkApp() {
             }
         },
 
-        // ===== REGISTER =====
-        async handleSave() {
-            if (!this.urlInput.trim()) return;
-            this.saving = true;
-            this.saveMsg = '';
-            this.processingSteps = this.processingSteps.map(s => ({ ...s, active: false, done: false }));
+        toggleCategoryEdit(id) {
+            this.editingBookmarkId = this.editingBookmarkId === id ? null : id;
+        },
 
-            for (let i = 0; i < this.processingSteps.length; i++) {
-                this.processingSteps[i].active = true;
-                await new Promise(r => setTimeout(r, 900));
-                this.processingSteps[i].done = true;
-            }
-
+        async updateBookmarkCategory(id, categoryId) {
             try {
-                const res = await fetch('/api/bookmarks', {
-                    method: 'POST',
+                const res = await fetch(`/api/bookmarks/${id}`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({ url: this.urlInput, memo: this.memoInput }),
+                    body: JSON.stringify({ category_id: categoryId }),
                 });
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    console.error('Save failed:', err);
-                    this.saveMsg = 'error';
-                    this.saveError = err.message ?? '保存に失敗しました';
-                    return;
-                }
-
-                const bookmark = await res.json();
-                this.bookmarks = [bookmark, ...this.bookmarks];
-                this.saveMsg = 'done';
-                this.urlInput = '';
-                this.memoInput = '';
-            } catch (e) { console.error(e); }
-            finally {
-                this.saving = false;
-                setTimeout(() => {
-                    this.saveMsg = '';
-                    this.processingSteps = this.processingSteps.map(s => ({ ...s, active: false, done: false }));
-                }, 2000);
+                const updated = await res.json();
+                const update = arr => arr.map(b => b.id === id ? { ...b, ...updated } : b);
+                this.bookmarks = update(this.bookmarks);
+                this.searchResults = update(this.searchResults);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                this.editingBookmarkId = null;
             }
         },
 
@@ -768,12 +609,7 @@ function bookmarkApp() {
             } catch (e) { console.error(e); }
         },
 
-        // ===== トークン =====
-        tokens: @json(auth()->user()->tokens()->latest()->get()),
-        newTokenName: '',
-        newlyCreatedToken: null,
-        tokenMsg: '',
-
+        // ===== TOKEN =====
         async addToken() {
             if (!this.newTokenName.trim()) return;
             try {
@@ -786,26 +622,18 @@ function bookmarkApp() {
                     },
                     body: JSON.stringify({ name: this.newTokenName }),
                 });
-
-                if (!res.ok) {
-                    console.error('Token creation failed:', await res.text());
-                    return;
-                }
-
+                if (!res.ok) { console.error('Token creation failed:', await res.text()); return; }
                 const data = await res.json();
-
                 if (data.token) {
                     this.tokens = [data.token, ...this.tokens];
                     this.newlyCreatedToken = data.plain_text_token;
                     this.newTokenName = '';
                 }
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         },
 
         async deleteToken(id) {
-            if (!confirm('このトークンを削除しますか？\n削除すると該当のデバイスからアクセスできなくなります。')) return;
+            if (!confirm('このトークンを削除しますか？')) return;
             try {
                 await fetch(`/tokens/${id}`, {
                     method: 'DELETE',
@@ -815,11 +643,8 @@ function bookmarkApp() {
                     },
                 });
                 this.tokens = this.tokens.filter(t => t.id !== id);
-                // 削除したトークンが表示中のものなら非表示に
                 this.newlyCreatedToken = null;
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         },
 
         async copyToken() {
@@ -828,7 +653,6 @@ function bookmarkApp() {
                 this.tokenMsg = 'コピー済み ✓';
                 setTimeout(() => this.tokenMsg = '', 2000);
             } catch (e) {
-                // clipboard APIが使えない場合
                 this.tokenMsg = '手動でコピーしてください';
             }
         },
