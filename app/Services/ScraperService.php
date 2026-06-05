@@ -14,25 +14,17 @@ class ScraperService
 
         $html = $response->body();
 
-        // タイトル抽出（属性付きtitleタグに対応）
-        preg_match('/<title[^>]*>(.*?)<\/title>/si', $html, $titleMatch);
-        $title = isset($titleMatch[1])
-            ? html_entity_decode(strip_tags($titleMatch[1]), ENT_QUOTES, 'UTF-8')
-            : '';
+        $title = $this->getMetaContent($html, 'og:title');
+        $imageUrl = $this->getMetaContent($html, 'og:image');
+        $description = $this->getMetaContent($html, 'og:description');
 
-        // OGP description を本文として使う
-        preg_match('/<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']/si', $html, $descMatch);
-        $ogDescription = $descMatch[1] ?? '';
-
-        // OGP titleも試みる
+        // titleが空なら<title>タグから取得
         if (empty($title)) {
-            preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\'](.*?)["\']/si', $html, $m);
-            $title = $m[1] ?? '';
+            preg_match('/<title[^>]*>(.*?)<\/title>/si', $html, $m);
+            $title = isset($m[1])
+                ? html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8')
+                : '';
         }
-
-        // OGP image
-        preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\']/si', $html, $imageMatch);
-        $imageUrl = isset($imageMatch[1]) ? str_replace('http://', 'https://', $imageMatch[1]) : '';
 
         // 本文抽出（script/style除去）
         $text = preg_replace('/<script[^>]*>.*?<\/script>/si', '', $html);
@@ -41,11 +33,35 @@ class ScraperService
         $text = preg_replace('/\s+/', ' ', $text);
         $text = trim(mb_substr($text, 0, 3000));
 
-        // 本文が短い場合はOGP descriptionで補完
-        if (mb_strlen($text) < 100 && !empty($ogDescription)) {
-            $text = $ogDescription;
+        // 本文が短ければog:descriptionで補完
+        if (mb_strlen($text) < 100 && !empty($description)) {
+            $text = $description;
         }
 
+        // http → https に変換
+        $imageUrl = str_replace('http://', 'https://', $imageUrl);
+
         return compact('title', 'text', 'imageUrl');
+    }
+
+    // OGP情報取得
+    private function getMetaContent(string $html, string $property): string
+    {
+        // property → content の順
+        preg_match(
+            '/<meta[^>]+property=["\']' . preg_quote($property, '/') . '["\'][^>]+content=["\'](.*?)["\']/si',
+            $html, $m1
+        );
+
+        // content → property の順（逆パターン）
+        preg_match(
+            '/<meta[^>]+content=["\'](.*?)["\'"][^>]+property=["\']' . preg_quote($property, '/') . '["\'][^>]*/si',
+            $html, $m2
+        );
+
+        $result = $m1[1] ?? $m2[1] ?? '';
+
+        // HTMLエンティティをデコード（&amp; → & など）
+        return html_entity_decode($result, ENT_QUOTES, 'UTF-8');
     }
 }
