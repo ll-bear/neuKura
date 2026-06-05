@@ -568,7 +568,7 @@ function bookmarkApp() {
         editingRemarks: '',
         categoryMsg: '',
 
-        previewImageErrors: {},
+        previewImageErrors: [],
 
         init() {},
 
@@ -603,11 +603,11 @@ function bookmarkApp() {
         },
 
         previewImageFailed(id) {
-            return Boolean(this.previewImageErrors[id]);
+            return this.previewImageErrors.includes(id);
         },
 
         onPreviewImageError(id) {
-            this.previewImageErrors[id] = true;
+            this.previewImageErrors = [...this.previewImageErrors, id];
         },
 
         get filtered() {
