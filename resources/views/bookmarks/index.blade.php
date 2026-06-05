@@ -111,7 +111,7 @@
                     </template>
 
                     <template x-for="bm in (search ? searchResults : filtered)" :key="bm.id">
-                        <article class="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden
+                        <article class="rounded-2xl border border-slate-200/90 bg-white shadow-sm
                                         hover:border-violet-200 hover:shadow-md transition-all duration-200">
 
                             {{-- リンクエリア --}}
@@ -186,7 +186,7 @@
                                          @click.outside="editingBookmarkId = null"
                                          x-transition
                                          class="absolute bottom-full left-0 mb-1 w-40 bg-white rounded-xl
-                                                shadow-lg border border-slate-200 overflow-hidden z-10">
+                                                shadow-lg border border-slate-200 overflow-hidden z-30">
                                         <button @click.stop="updateBookmarkCategory(bm.id, null)"
                                                 class="w-full text-left px-3 py-2 text-xs text-slate-400
                                                        hover:bg-slate-50 transition-colors">
