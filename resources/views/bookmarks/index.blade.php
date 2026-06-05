@@ -120,7 +120,7 @@
                                       hover:border-violet-200 hover:shadow-md active:scale-[0.99]">
 
                                 {{-- プレビュー画像 --}}
-                                <div class="relative aspect-[16/9] bg-slate-100 overflow-hidden">
+                                <div class="relative aspect-video bg-slate-100 overflow-hidden">
                                     <img :src="previewImage(bm)"
                                          :alt="bm.title || previewHost(bm.url)"
                                          loading="lazy"
