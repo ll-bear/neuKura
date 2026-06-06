@@ -46,9 +46,14 @@ class ScraperService
 
     private function convertToUtf8(string $html): string
     {
-        // metaタグから文字コードを検出
-        preg_match('/<meta[^>]+charset=["\']?([a-zA-Z0-9\-]+)/si', $html, $m);
+        // 文字コード名にハイフン・アンダースコアを含むケースに対応
+        preg_match('/<meta[^>]+charset=["\']?\s*([a-zA-Z0-9\-_]+)/si', $html, $m);
         $charset = strtolower(trim($m[1] ?? ''));
+
+        // Shift_JIS の表記ゆれを正規化
+        $charset = str_replace(['shift-jis', 'shift_jis', 'sjis', 'x-sjis'], 'SJIS', $charset);
+        $charset = str_replace(['euc-jp', 'euc_jp'], 'EUC-JP', $charset);
+        $charset = str_replace(['iso-2022-jp'], 'ISO-2022-JP', $charset);
 
         if ($charset && !in_array($charset, ['utf-8', 'utf8'])) {
             $converted = mb_convert_encoding($html, 'UTF-8', $charset);
