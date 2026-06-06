@@ -535,16 +535,24 @@ function bookmarkApp() {
         async deleteBookmark(id) {
             if (!confirm('このブックマークを削除しますか？')) return;
             try {
-                await fetch(`/api/bookmarks/${id}`, {
+                const res = await fetch(`/api/bookmarks/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
                 });
+
+                if (!res.ok) {
+                    console.error('Delete failed:', res.status, await res.text());
+                    return; // UIを更新しない
+                }
+
                 this.bookmarks = this.bookmarks.filter(b => b.id !== id);
                 this.searchResults = this.searchResults.filter(b => b.id !== id);
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            }
         },
 
         // ===== CONFIG =====
