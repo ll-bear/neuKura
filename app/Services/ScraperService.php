@@ -8,17 +8,11 @@ class ScraperService
 {
     public function scrape(string $url): array
     {
-        /*
-        $response = Http::withHeaders([
-            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        ])->timeout(15)->get($url);
-        */
-        
         $response = Http::withHeaders([
             'User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
         ])->timeout(15)->get($url);
 
-        $html = $response->body();
+        $html = $this->convertToUtf8($response->body());
 
         $title = $this->getMetaContent($html, 'og:title');
         $imageUrl = $this->getMetaContent($html, 'og:image');
@@ -48,6 +42,31 @@ class ScraperService
         $imageUrl = str_replace('http://', 'https://', $imageUrl);
 
         return compact('title', 'text', 'imageUrl');
+    }
+
+    private function convertToUtf8(string $html): string
+    {
+        // metaタグから文字コードを検出
+        preg_match('/<meta[^>]+charset=["\']?([a-zA-Z0-9\-]+)/si', $html, $m);
+        $charset = strtolower(trim($m[1] ?? ''));
+
+        if ($charset && !in_array($charset, ['utf-8', 'utf8'])) {
+            $converted = mb_convert_encoding($html, 'UTF-8', $charset);
+            if ($converted !== false) {
+                return $converted;
+            }
+        }
+
+        // metaタグで検出できない場合
+        $detected = mb_detect_encoding($html, ['UTF-8', 'SJIS', 'EUC-JP', 'ISO-2022-JP'], true);
+        if ($detected && $detected !== 'UTF-8') {
+            $converted = mb_convert_encoding($html, 'UTF-8', $detected);
+            if ($converted !== false) {
+                return $converted;
+            }
+        }
+
+        return $html;
     }
 
     // OGP情報取得
