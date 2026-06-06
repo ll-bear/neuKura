@@ -73,7 +73,7 @@ class BookmarkService
     public function destroy(int $userId, Bookmark $bookmark): void
     {
         abort_if($bookmark->user_id !== $userId, 403);
-        $this->bookmarkRepository->delete($bookmark);
+        $this->bookmarkRepository->delete($bookmark->id);
     }
 
     private function cosineSimilarity(array $a, array $b): float

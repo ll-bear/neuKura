@@ -11,5 +11,5 @@ interface BookmarkRepositoryInterface
     public function paginateByUser(int $userId, int $perPage = 20): LengthAwarePaginator;
     public function findWithVectorsByUser(int $userId): Collection;
     public function create(array $data);
-    public function destroy($id): void;
+    public function delete(int $id): void;
 }
