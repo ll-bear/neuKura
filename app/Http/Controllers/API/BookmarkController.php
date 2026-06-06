@@ -56,6 +56,12 @@ class BookmarkController
 
     public function destroy(Bookmark $bookmark): JsonResponse
     {
+        \Log::debug('destroy called', [
+            'bookmark_id' => $bookmark->id,
+            'bookmark_user_id' => $bookmark->user_id,
+            'auth_id' => auth()->id(),
+        ]);
+        
         $this->bookmarkService->destroy(auth()->id(), $bookmark);
         return response()->json(null, 204);
     }
