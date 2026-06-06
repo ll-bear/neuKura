@@ -35,7 +35,7 @@ class BookmarkRepository extends BaseRepository  implements BookmarkRepositoryIn
         return $this->model::create($data);
     }
 
-    public function delete($id): void
+    public function delete($id)
     {
         Bookmark::findOrFail($id)->delete();
     }
