@@ -12,9 +12,9 @@ class OllamaService
 
     public function __construct()
     {
-        $this->baseUrl = config('webPlot.llm_api_url');
-        $this->model = config('webPlot.llm_model');
-        $this->embedModel = config('webPlot.llm_embed_model');
+        $this->baseUrl = config('neuKura.llm_api_url');
+        $this->model = config('neuKura.llm_model');
+        $this->embedModel = config('neuKura.llm_embed_model');
     }
 
     public function summarizeAndCategorize(string $text, array $categories): array
@@ -39,7 +39,7 @@ class OllamaService
 }
 PROMPT;
 
-        $timeout = (int) config('webPlot.llm_chat_timeout', 120);
+        $timeout = (int) config('neuKura.llm_chat_timeout', 120);
 
         $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/chat", [
             'model' => $this->model,
@@ -55,7 +55,7 @@ PROMPT;
 
     public function embed(string $text): array
     {
-        $timeout = (int) config('webPlot.llm_embed_timeout', 180);
+        $timeout = (int) config('neuKura.llm_embed_timeout', 180);
         $model = $this->embedModel;
 
         $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/embed", [
@@ -91,7 +91,7 @@ PROMPT;
     /*
     public function embed(string $text): array
     {
-        $timeout = (int) config('webPlot.llm_embed_timeout', 180);
+        $timeout = (int) config('neuKura.llm_embed_timeout', 180);
 
         $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/embed", [
             'model' => $this->embedModel,

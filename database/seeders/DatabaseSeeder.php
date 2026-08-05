@@ -15,12 +15,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $defaultEmail = config('webPlot.default_user_email');
+        $defaultEmail = config('neuKura.default_user_email');
         if ($defaultEmail && !\App\Models\User::where('email', $defaultEmail)->exists()) {
             \App\Models\User::create([
-                'name' => config('webPlot.default_user_name'),
+                'name' => config('neuKura.default_user_name'),
                 'email' => $defaultEmail,
-                'password' => \Illuminate\Support\Facades\Hash::make(config('webPlot.default_user_password')),
+                'password' => \Illuminate\Support\Facades\Hash::make(config('neuKura.default_user_password')),
             ]);
         }
 
