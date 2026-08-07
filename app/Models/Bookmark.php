@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bookmark extends Model
 {
@@ -21,5 +23,23 @@ class Bookmark extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * このブックマークに紐づく認証情報(複数可)
+     */
+    public function credentials(): HasMany
+    {
+        return $this->hasMany(Credential::class);
+    }
+
+    /**
+     * URLからホスト名を動的に算出するアクセサ
+     */
+    protected function domain(): Attribute
+    {
+        return Attribute::get(
+            fn () => parse_url($this->url, PHP_URL_HOST)
+        );
     }
 }
