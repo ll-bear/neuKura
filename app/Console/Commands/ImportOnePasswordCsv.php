@@ -52,7 +52,7 @@ class ImportOnePasswordCsv extends Command
 
         DB::transaction(function () use ($rows, $user, &$created, &$skippedNoUrl, &$bookmarksCreated, &$bookmarksReused) {
             foreach ($rows as $row) {
-                $url = trim($row['Url'] ?? '');
+                $url = $this->normalizeUrl(trim($row['Url'] ?? ''));
 
                 if ($url === '') {
                     $skippedNoUrl++;
@@ -93,6 +93,36 @@ class ImportOnePasswordCsv extends Command
         $this->line("  - URLなしでスキップ: {$skippedNoUrl}件");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * OAuthコールバックURL等、クエリパラメータ・フラグメントが付いた一時的なURLを
+     * 「サイトのトップ相当」に正規化する。
+     * 例: https://github.com/login?client_id=xxx&state=yyy → https://github.com/login
+     *
+     * ドメイン一致検索(domainアクセサ)自体はクエリの有無に影響されないが、
+     * ブックマークとして保存する値としては無意味なため除去する。
+     */
+    private function normalizeUrl(string $url): string
+    {
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || ! isset($parts['scheme'], $parts['host'])) {
+            return $url; // パース失敗時は元の値をそのまま使う(呼び出し側でDB保存時にエラーが出れば個別対応)
+        }
+
+        $normalized = $parts['scheme'] . '://' . $parts['host'];
+        if (isset($parts['port'])) {
+            $normalized .= ':' . $parts['port'];
+        }
+        if (isset($parts['path'])) {
+            $normalized .= $parts['path'];
+        }
+
+        return $normalized;
     }
 
     /**
