@@ -16,6 +16,7 @@ class Credential extends Model
         'label',
         'username',
         'password_encrypted',
+        'notes',
     ];
 
     protected $hidden = [
@@ -49,6 +50,7 @@ class Credential extends Model
             'label' => $this->label ?? $this->bookmark->title,
             'username' => $this->username,
             'password' => $this->password_encrypted, // encryptedキャストにより取得時点で復号済み
+            'notes' => $this->notes,
         ];
     }
 }
