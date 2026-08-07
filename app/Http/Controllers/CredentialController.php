@@ -6,7 +6,7 @@ use App\Models\Bookmark;
 use App\Models\Credential;
 use Illuminate\Http\Request;
 
-class CredentialController extends Controller
+class CredentialController
 {
     /**
      * 拡張機能から呼ばれるエンドポイント
