@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\FetchFaviconJob;
+use App\Models\Bookmark;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,17 +15,21 @@ class SecretPickerController extends Controller
         $domain = $request->query('domain');
 
         $credentials = $user->credentials()
-            ->select('id', 'title', 'url', 'username', 'favicon_path')
+            ->with('bookmark:id,title,url,favicon_path')
             ->get()
-            ->map(fn ($c) => [
-                'kind' => 'credential',
-                'id' => $c->id,
-                'title' => $c->title,
-                'sub' => $c->url,
-                'username' => $c->username,
-                'favicon_url' => $c->favicon_path ? Storage::url($c->favicon_path) : null,
-                'match' => $domain && str_contains($c->url, $domain),
-            ]);
+            ->map(function ($c) use ($domain) {
+                $bookmark = $c->bookmark;
+
+                return [
+                    'kind' => 'credential',
+                    'id' => $c->id,
+                    'title' => $c->label ?? $bookmark?->title ?? $bookmark?->url ?? '(無題)',
+                    'sub' => $bookmark?->url,
+                    'username' => $c->username,
+                    'favicon_url' => $bookmark?->favicon_path ? Storage::url($bookmark->favicon_path) : null,
+                    'match' => $domain && $bookmark && str_contains($bookmark->url, $domain),
+                ];
+            });
 
         $secrets = $user->secrets()
             ->select('id', 'title', 'category')
@@ -62,7 +67,8 @@ class SecretPickerController extends Controller
         if ($validated['kind'] === 'credential') {
             $item = $user->credentials()->findOrFail($validated['id']);
 
-            return response()->json(['value' => $item->password]);
+            // encryptedキャストにより取得時点で復号済み
+            return response()->json(['value' => $item->password_encrypted]);
         }
 
         $item = $user->secrets()->findOrFail($validated['id']);
@@ -83,21 +89,33 @@ class SecretPickerController extends Controller
         ]);
 
         $title = parse_url($validated['url'], PHP_URL_HOST) ?? $validated['url'];
+        $user = $request->user();
 
-        $credential = $request->user()->credentials()->create([
-            'title' => $title,
-            'url' => $validated['url'],
+        // 同一URLの既存bookmarkがあれば再利用(同一サイトへの複数アカウント登録に対応)
+        $bookmark = $user->bookmarks()->where('url', $validated['url'])->first();
+
+        if (! $bookmark) {
+            $bookmark = Bookmark::create([
+                'user_id' => $user->id,
+                'category_id' => null,
+                'title' => $title,
+                'url' => $validated['url'],
+            ]);
+
+            FetchFaviconJob::dispatch($bookmark->id);
+        }
+
+        $credential = $user->credentials()->create([
+            'bookmark_id' => $bookmark->id,
             'username' => $validated['username'],
-            'password' => $validated['password'],
-            'comment' => $validated['comment'],
+            'password_encrypted' => $validated['password'],
+            'notes' => $validated['comment'],
         ]);
-
-        FetchFaviconJob::dispatch($credential->id);
 
         return response()->json([
             'kind' => 'credential',
             'id' => $credential->id,
-            'value' => $credential->password,
+            'value' => $credential->password_encrypted,
         ]);
     }
 }
