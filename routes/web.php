@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookmarkWebController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TokenController;
+use App\Http\Controllers\SecretPickerController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -23,4 +24,10 @@ Route::middleware('auth')->group(function () {
     // トークン管理
     Route::post('/tokens', [TokenController::class, 'store'])->name('tokens.store');
     Route::delete('/tokens/{tokenId}', [TokenController::class, 'destroy'])->name('tokens.destroy');
+});
+
+Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function () {
+    Route::get('/picker', [SecretPickerController::class, 'index'])->name('picker');
+    Route::post('/picker/reveal', [SecretPickerController::class, 'reveal'])->name('picker.reveal');
+    Route::post('/picker/store', [SecretPickerController::class, 'store'])->name('picker.store');
 });

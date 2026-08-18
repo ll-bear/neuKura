@@ -17,6 +17,8 @@ class Credential extends Model
         'username',
         'password_encrypted',
         'notes',
+        'favicon_path',
+        'favicon_fetched_at',
     ];
 
     protected $hidden = [
@@ -28,6 +30,8 @@ class Credential extends Model
         // $credential->password_encrypted = '生パスワード'; で保存時に自動暗号化
         // $credential->password_encrypted; で取得時に自動復号
         'password_encrypted' => 'encrypted',
+        'password' => 'encrypted',
+        'favicon_fetched_at' => 'datetime',
     ];
 
     public function bookmark(): BelongsTo
