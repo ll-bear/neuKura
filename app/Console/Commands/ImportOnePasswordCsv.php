@@ -54,10 +54,13 @@ class ImportOnePasswordCsv extends Command
             foreach ($rows as $row) {
                 $url = $this->normalizeUrl(trim($row['Url'] ?? ''));
 
+                /*
+                // URLが空の場合はスキップ
                 if ($url === '') {
                     $skippedNoUrl++;
                     continue;
                 }
+                */
 
                 // 同じURLのブックマークが既にあれば再利用、なければ新規作成
                 $bookmark = Bookmark::where('user_id', $user->id)
