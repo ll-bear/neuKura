@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\BookmarkController;
-use App\Http\Controllers\Api\ExtensionAuthController;
-use App\Http\Controllers\Api\SecretPickerApiController;
+use App\Http\Controllers\API\ExtensionAuthController;
+use App\Http\Controllers\API\SecretPickerApiController;
 use App\Http\Controllers\CredentialController;
 use App\Http\Controllers\SecretPickerController;
 
