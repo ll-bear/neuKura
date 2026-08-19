@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\BookmarkController;
+use App\Http\Controllers\Api\ExtensionAuthController;
 use App\Http\Controllers\Api\SecretPickerApiController;
 use App\Http\Controllers\CredentialController;
+use App\Http\Controllers\SecretPickerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +17,28 @@ use App\Http\Controllers\CredentialController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+// ログイン(トークン発行)は未認証でアクセスできる必要があるため auth:sanctum の外に置く
+Route::post('/auth/extension/login', [ExtensionAuthController::class, 'login'])
+    ->middleware('throttle:6,1'); // ブルートフォース対策で1分に6回まで
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/auth/extension/logout', [ExtensionAuthController::class, 'logout']);
+
+    Route::prefix('secrets')->group(function () {
+        Route::get('/picker', [SecretPickerApiController::class, 'index'])
+            ->middleware('ability:credentials:read');
+
+        Route::post('/picker/reveal', [SecretPickerApiController::class, 'reveal'])
+            ->middleware('ability:credentials:read');
+
+        Route::post('/picker/store', [SecretPickerApiController::class, 'store'])
+            ->middleware('ability:credentials:write');
+
+        Route::post('/picker/store-secret', [SecretPickerApiController::class, 'storeSecret'])
+            ->middleware('ability:credentials:write');
+    });
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('bookmarks/search', [BookmarkController::class, 'search']);
