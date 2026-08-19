@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\BookmarkController;
+use App\Http\Controllers\Api\SecretPickerApiController;
 use App\Http\Controllers\CredentialController;
 
 /*
@@ -27,4 +28,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bookmarks/{bookmark}/credentials', [CredentialController::class, 'store']);
     Route::patch('/credentials/{credential}', [CredentialController::class, 'update']);
     Route::delete('/credentials/{credential}', [CredentialController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum'])->prefix('secrets')->group(function () {
+    Route::get('/picker', [SecretPickerApiController::class, 'index'])
+        ->middleware('ability:credentials:read');
+
+    Route::post('/picker/reveal', [SecretPickerApiController::class, 'reveal'])
+        ->middleware('ability:credentials:read');
+
+    Route::post('/picker/store', [SecretPickerApiController::class, 'store'])
+        ->middleware('ability:credentials:write');
+
+    Route::post('/picker/store-secret', [SecretPickerApiController::class, 'storeSecret'])
+        ->middleware('ability:credentials:write');
+});
+
+Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function () {
+    Route::get('/picker', [SecretPickerController::class, 'index'])->name('picker');
+    Route::post('/picker/reveal', [SecretPickerController::class, 'reveal'])->name('picker.reveal');
+    Route::post('/picker/store', [SecretPickerController::class, 'store'])->name('picker.store');
+    Route::post('/picker/store-secret', [SecretPickerController::class, 'storeSecret'])->name('picker.store-secret');
 });

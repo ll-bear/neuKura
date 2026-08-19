@@ -5,6 +5,7 @@
         items: @js($items),
         domain: @js($domain),
         storeUrl: @js(route('secrets.picker.store')),
+        storeSecretUrl: @js(route('secrets.picker.store-secret')),
         revealUrl: @js(route('secrets.picker.reveal')),
         csrfToken: @js(csrf_token()),
     })"
@@ -62,14 +63,28 @@
 
     {{-- 新規登録パネル --}}
     <div x-show="showNewPanel" x-cloak x-transition class="glass-card mt-5 !cursor-default">
-        <p class="text-sm font-medium text-slate-800 mb-4">
+        <p class="text-sm font-medium text-slate-800 mb-3">
             <svg class="w-4 h-4 inline -mt-0.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            新しいログイン情報を保存
+            新しく保存する
         </p>
 
-        <div class="space-y-3">
+        {{-- 種別選択 --}}
+        <div class="flex gap-2 mb-4 flex-wrap">
+            <template x-for="t in newTypes" :key="t.id">
+                <button
+                    @click="selectNewType(t.id)"
+                    type="button"
+                    class="text-xs px-3 py-1.5 rounded-full border transition-colors"
+                    :class="newType === t.id ? 'chip-active' : 'chip-inactive'"
+                    x-text="t.label"
+                ></button>
+            </template>
+        </div>
+
+        {{-- ログイン情報フォーム --}}
+        <div x-show="newType === 'login'" class="space-y-3">
             <div>
                 <label class="glass-label">サイト / URL</label>
                 <input type="text" x-model="form.url" placeholder="example.com" class="glass-input">
@@ -91,10 +106,43 @@
                 <label class="glass-label">コメント</label>
                 <input type="text" x-model="form.comment" placeholder="任意メモ" class="glass-input">
             </div>
-            <div class="flex gap-2 pt-1">
-                <button @click="showNewPanel = false" type="button" class="glass-btn flex-1">キャンセル</button>
-                <button @click="saveNew()" type="button" class="glass-btn-primary flex-1">保存して選択</button>
+        </div>
+
+        {{-- 汎用シークレットフォーム(Wi-Fi / ライセンスキー / PIN / その他) --}}
+        <div x-show="newType !== 'login'" class="space-y-3">
+            <div>
+                <label class="glass-label">タイトル</label>
+                <input type="text" x-model="secretForm.title" :placeholder="newTypeLabel + 'の名前(例: 自宅Wi-Fi)'" class="glass-input">
             </div>
+
+            <template x-for="f in currentSecretFields" :key="f.key">
+                <div>
+                    <label class="glass-label" x-text="f.label"></label>
+                    <div class="flex gap-2">
+                        <input type="text" x-model="secretForm.fields[f.key]" class="glass-input flex-1">
+                        <button
+                            x-show="f.generate"
+                            @click="secretForm.fields[f.key] = generatePassword()"
+                            type="button"
+                            class="glass-btn whitespace-nowrap"
+                        >自動生成</button>
+                    </div>
+                </div>
+            </template>
+
+            <div>
+                <label class="glass-label">メモ</label>
+                <input type="text" x-model="secretForm.memo" placeholder="任意メモ" class="glass-input">
+            </div>
+        </div>
+
+        <div class="flex gap-2 pt-3">
+            <button @click="closeNewPanel()" type="button" class="glass-btn flex-1">キャンセル</button>
+            <button
+                @click="newType === 'login' ? saveNew() : saveNewSecret()"
+                type="button"
+                class="glass-btn-primary flex-1"
+            >保存して選択</button>
         </div>
     </div>
 
@@ -108,7 +156,7 @@
 
 @push('scripts')
 <script>
-function secretPicker({ items, domain, storeUrl, revealUrl, csrfToken }) {
+function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrfToken }) {
     return {
         items,
         domain,
@@ -125,6 +173,59 @@ function secretPicker({ items, domain, storeUrl, revealUrl, csrfToken }) {
             { id: 'pin', label: 'PIN' },
             { id: 'uncategorized', label: '未分類' },
         ],
+
+        // 新規登録パネルの種別
+        newType: 'login',
+        newTypes: [
+            { id: 'login', label: 'ログイン' },
+            { id: 'wifi', label: 'Wi-Fi' },
+            { id: 'license', label: 'ライセンスキー' },
+            { id: 'pin', label: 'PIN' },
+            { id: 'other', label: 'その他' },
+        ],
+        // カテゴリごとのfields構成。keyはSecret.fieldsのJSONキーとしてそのまま保存される。
+        secretFieldConfig: {
+            wifi: [
+                { key: 'ssid', label: 'SSID' },
+                { key: 'password', label: 'パスワード', generate: true },
+            ],
+            license: [
+                { key: 'product', label: '製品名' },
+                { key: 'key', label: 'ライセンスキー' },
+            ],
+            pin: [
+                { key: 'pin', label: 'PINコード' },
+            ],
+            other: [
+                { key: 'value', label: '値' },
+            ],
+        },
+        secretForm: { title: '', memo: '', fields: {} },
+
+        get newTypeLabel() {
+            const t = this.newTypes.find(t => t.id === this.newType);
+            return t ? t.label : '';
+        },
+
+        get currentSecretFields() {
+            return this.secretFieldConfig[this.newType] || [];
+        },
+
+        selectNewType(id) {
+            this.newType = id;
+            if (id !== 'login') {
+                const fields = {};
+                (this.secretFieldConfig[id] || []).forEach(f => { fields[f.key] = ''; });
+                this.secretForm = { title: '', memo: '', fields };
+            }
+        },
+
+        closeNewPanel() {
+            this.showNewPanel = false;
+            this.newType = 'login';
+            this.form = { url: '', username: '', password: '', comment: '' };
+            this.secretForm = { title: '', memo: '', fields: {} };
+        },
 
         get filteredItems() {
             const filtered = this.activeCat === 'all'
@@ -183,9 +284,41 @@ function secretPicker({ items, domain, storeUrl, revealUrl, csrfToken }) {
             });
 
             await navigator.clipboard.writeText(data.value);
-            this.form = { url: '', username: '', password: '', comment: '' };
-            this.showNewPanel = false;
             this.showToast('保存してコピーしました');
+            this.closeNewPanel();
+        },
+
+        async saveNewSecret() {
+            if (!this.secretForm.title) return;
+
+            const res = await fetch(storeSecretUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    category: this.newType,
+                    title: this.secretForm.title,
+                    memo: this.secretForm.memo,
+                    fields: this.secretForm.fields,
+                }),
+            });
+            const data = await res.json();
+
+            this.items.unshift({
+                kind: 'secret',
+                id: data.id,
+                title: this.secretForm.title,
+                sub: this.newType,
+                username: null,
+                favicon_url: null,
+                match: false,
+            });
+
+            await navigator.clipboard.writeText(data.value);
+            this.showToast('保存してコピーしました');
+            this.closeNewPanel();
         },
 
         showToast(msg) {

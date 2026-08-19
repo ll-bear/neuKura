@@ -1,14 +1,23 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Jobs\FetchFaviconJob;
 use App\Models\Bookmark;
 use App\Models\Secret;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class SecretPickerController extends Controller
+/**
+ * Chrome拡張機能のpopupから叩くJSON API版。
+ * 画面(Blade)版の SecretPickerController と処理内容は共通だが、
+ * 認証がセッションCookieではなくSanctumトークンである点が異なる。
+ *
+ * NOTE: ability名('credentials:read' 等)は既存のスコープ命名規則に
+ * 合わせて調整してください。ここでは仮の名称を使っています。
+ */
+class SecretPickerApiController extends Controller
 {
     public function index(Request $request)
     {
@@ -45,15 +54,9 @@ class SecretPickerController extends Controller
                 'match' => false,
             ]);
 
-        $items = $credentials->concat($secrets)
-            ->sortByDesc('match')
-            ->values();
+        $items = $credentials->concat($secrets)->sortByDesc('match')->values();
 
-        return view('secrets.picker', [
-            'items' => $items,
-            'domain' => $domain,
-            'source' => $request->query('source', 'web'),
-        ]);
+        return response()->json(['items' => $items]);
     }
 
     public function reveal(Request $request)
@@ -68,16 +71,16 @@ class SecretPickerController extends Controller
         if ($validated['kind'] === 'credential') {
             $item = $user->credentials()->findOrFail($validated['id']);
 
-            // encryptedキャストにより取得時点で復号済み
-            return response()->json(['value' => $item->password_encrypted]);
+            return response()->json([
+                'username' => $item->username,
+                'password' => $item->password_encrypted,
+            ]);
         }
 
         $item = $user->secrets()->findOrFail($validated['id']);
-
-        // secretsは複数フィールド持ちうるので、代表フィールド(password/key)を優先返却
         $value = $item->fields['password'] ?? $item->fields['key'] ?? reset($item->fields);
 
-        return response()->json(['value' => $value]);
+        return response()->json(['password' => $value]);
     }
 
     public function store(Request $request)
@@ -92,7 +95,6 @@ class SecretPickerController extends Controller
         $title = parse_url($validated['url'], PHP_URL_HOST) ?? $validated['url'];
         $user = $request->user();
 
-        // 同一URLの既存bookmarkがあれば再利用(同一サイトへの複数アカウント登録に対応)
         $bookmark = $user->bookmarks()->where('url', $validated['url'])->first();
 
         if (! $bookmark) {
@@ -116,14 +118,11 @@ class SecretPickerController extends Controller
         return response()->json([
             'kind' => 'credential',
             'id' => $credential->id,
-            'value' => $credential->password_encrypted,
+            'username' => $credential->username,
+            'password' => $credential->password_encrypted,
         ]);
     }
 
-    /**
-     * URLに紐づかない汎用シークレット(Wi-Fi/ライセンスキー/PINなど)の新規保存。
-     * カテゴリごとにfieldsのキー構成が変わるため、バリデーションはcategoryで分岐する。
-     */
     public function storeSecret(Request $request)
     {
         $validated = $request->validate([
@@ -134,22 +133,12 @@ class SecretPickerController extends Controller
             'fields.*' => 'nullable|string|max:1000',
         ]);
 
-        $secret = $request->user()->secrets()->create([
-            'category' => $validated['category'],
-            'title' => $validated['title'],
-            'fields' => $validated['fields'],
-            'memo' => $validated['memo'] ?? null,
-        ]);
+        $secret = $request->user()->secrets()->create($validated);
 
-        // 代表フィールド(picker上でそのままコピーする値)を決定
-        $primaryValue = $validated['fields']['password']
+        $value = $validated['fields']['password']
             ?? $validated['fields']['key']
             ?? reset($validated['fields']);
 
-        return response()->json([
-            'kind' => 'secret',
-            'id' => $secret->id,
-            'value' => $primaryValue,
-        ]);
+        return response()->json(['kind' => 'secret', 'id' => $secret->id, 'password' => $value]);
     }
 }
