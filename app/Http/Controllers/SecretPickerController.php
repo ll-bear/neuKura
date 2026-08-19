@@ -8,7 +8,7 @@ use App\Models\Secret;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class SecretPickerController extends Controller
+class SecretPickerController
 {
     public function index(Request $request)
     {

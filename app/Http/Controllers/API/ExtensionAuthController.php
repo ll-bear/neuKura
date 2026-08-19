@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
  * メール/パスワードを受け取り、Sanctumの個人アクセストークンを発行する。
  * SPA(Cookie)認証ではなく、拡張機能に保存する長期トークン方式。
  */
-class ExtensionAuthController extends Controller
+class ExtensionAuthController
 {
     public function login(Request $request)
     {
