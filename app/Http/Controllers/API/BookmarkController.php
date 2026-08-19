@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Controllers\Controller;
 use App\Models\Bookmark;
 use App\Services\BookmarkService;
 use Illuminate\Http\JsonResponse;
