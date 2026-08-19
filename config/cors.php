@@ -37,7 +37,7 @@ return [
 
     // 'api/*' だと全APIが対象になってしまうため、拡張機能/Shortcutsが叩く
     // credentials系エンドポイントのみに絞る
-    'paths' => ['api/credentials', 'api/credentials/*'],
+    'paths' => ['api/*', 'api/credentials', 'api/credentials/*'],
 
     // GETのみ許可(store/update/destroyはブラウザJS経由を想定していないため対象外)
     'allowed_methods' => ['GET'],
