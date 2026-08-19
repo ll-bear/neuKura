@@ -7,7 +7,7 @@ use App\Services\BookmarkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class BookmarkController
+class BookmarkController extends Controller
 {
     public function __construct(
         private BookmarkService $bookmarkService,

@@ -5,7 +5,6 @@ use App\Http\Controllers\API\BookmarkController;
 use App\Http\Controllers\API\ExtensionAuthController;
 use App\Http\Controllers\API\SecretPickerApiController;
 use App\Http\Controllers\CredentialController;
-use App\Http\Controllers\SecretPickerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +24,19 @@ Route::post('/auth/extension/login', [ExtensionAuthController::class, 'login'])
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/auth/extension/logout', [ExtensionAuthController::class, 'logout']);
 
+    Route::get('bookmarks/search', [BookmarkController::class, 'search']);
+    Route::apiResource('bookmarks', BookmarkController::class, ['only' => ['store', 'update', 'destroy']]);
+
+    // 拡張機能専用: 'credentials:read' abilityを持つトークンのみ許可
+    Route::get('/credentials', [CredentialController::class, 'index'])
+        ->middleware('ability:credentials:read');
+
+    // neuKura画面側の管理操作: 通常のログインセッション/フルアクセストークン用
+    Route::post('/bookmarks/{bookmark}/credentials', [CredentialController::class, 'store']);
+    Route::patch('/credentials/{credential}', [CredentialController::class, 'update']);
+    Route::delete('/credentials/{credential}', [CredentialController::class, 'destroy']);
+
+    // secrets picker (Chrome拡張機能向けJSON API)
     Route::prefix('secrets')->group(function () {
         Route::get('/picker', [SecretPickerApiController::class, 'index'])
             ->middleware('ability:credentials:read');
@@ -38,39 +50,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/picker/store-secret', [SecretPickerApiController::class, 'storeSecret'])
             ->middleware('ability:credentials:write');
     });
-});
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('bookmarks/search', [BookmarkController::class, 'search']);
-    Route::apiResource('bookmarks', BookmarkController::class, ['only' => ['store', 'update', 'destroy']]);
-
-    // 拡張機能専用: 'credentials:read' abilityを持つトークンのみ許可
-    Route::get('/credentials', [CredentialController::class, 'index'])
-        ->middleware('ability:credentials:read');
-
-    // neuKura画面側の管理操作: 通常のログインセッション/フルアクセストークン用
-    Route::post('/bookmarks/{bookmark}/credentials', [CredentialController::class, 'store']);
-    Route::patch('/credentials/{credential}', [CredentialController::class, 'update']);
-    Route::delete('/credentials/{credential}', [CredentialController::class, 'destroy']);
-});
-
-Route::middleware(['auth:sanctum'])->prefix('secrets')->group(function () {
-    Route::get('/picker', [SecretPickerApiController::class, 'index'])
-        ->middleware('ability:credentials:read');
-
-    Route::post('/picker/reveal', [SecretPickerApiController::class, 'reveal'])
-        ->middleware('ability:credentials:read');
-
-    Route::post('/picker/store', [SecretPickerApiController::class, 'store'])
-        ->middleware('ability:credentials:write');
-
-    Route::post('/picker/store-secret', [SecretPickerApiController::class, 'storeSecret'])
-        ->middleware('ability:credentials:write');
-});
-
-Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function () {
-    Route::get('/picker', [SecretPickerController::class, 'index'])->name('picker');
-    Route::post('/picker/reveal', [SecretPickerController::class, 'reveal'])->name('picker.reveal');
-    Route::post('/picker/store', [SecretPickerController::class, 'store'])->name('picker.store');
-    Route::post('/picker/store-secret', [SecretPickerController::class, 'storeSecret'])->name('picker.store-secret');
 });

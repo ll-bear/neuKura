@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
  * NOTE: ability名('credentials:read' 等)は既存のスコープ命名規則に
  * 合わせて調整してください。ここでは仮の名称を使っています。
  */
-class SecretPickerApiController
+class SecretPickerApiController extends Controller
 {
     public function index(Request $request)
     {

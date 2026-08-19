@@ -7,7 +7,7 @@ use App\Models\Category;
 use App\Services\BookmarkService;
 use App\Services\CategoryService;
 
-class BookmarkWebController
+class BookmarkWebController extends Controller
 {
     public function __construct(
         private BookmarkService $bookmarkService,

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\TokenRequest;
 
-class TokenController
+class TokenController extends Controller
 {
     public function store(TokenRequest $request)
     {

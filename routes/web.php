@@ -30,4 +30,5 @@ Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function
     Route::get('/picker', [SecretPickerController::class, 'index'])->name('picker');
     Route::post('/picker/reveal', [SecretPickerController::class, 'reveal'])->name('picker.reveal');
     Route::post('/picker/store', [SecretPickerController::class, 'store'])->name('picker.store');
+    Route::post('/picker/store-secret', [SecretPickerController::class, 'storeSecret'])->name('picker.store-secret');
 });

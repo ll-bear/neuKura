@@ -7,7 +7,7 @@ use App\Http\Requests\CategoryRequest;
 use App\Services\CategoryService;
 
 
-class CategoryController
+class CategoryController extends Controller
 {
     public function __construct(CategoryService $categoryService)
     {
