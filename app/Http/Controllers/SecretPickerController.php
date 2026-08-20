@@ -53,6 +53,10 @@ class SecretPickerController extends Controller
             'items' => $items,
             'domain' => $domain,
             'source' => $request->query('source', 'web'),
+            // 新規登録の呼び水: URLありでpickerに来た場合、フォームにプリフィルし
+            // autoNew=1 なら新規登録パネルを開いた状態で表示する
+            'prefillUrl' => $request->query('url'),
+            'autoNew' => $request->boolean('autoNew'),
         ]);
     }
 

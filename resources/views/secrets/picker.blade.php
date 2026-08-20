@@ -8,6 +8,8 @@
         storeSecretUrl: @js(route('secrets.picker.store-secret')),
         revealUrl: @js(route('secrets.picker.reveal')),
         csrfToken: @js(csrf_token()),
+        prefillUrl: @js($prefillUrl),
+        autoNew: @js($autoNew),
     })"
     class="max-w-2xl mx-auto px-4 py-6"
 >
@@ -42,22 +44,30 @@
         </button>
 
         <template x-for="item in filteredItems" :key="item.kind + '-' + item.id">
-            <button @click="selectItem(item)" class="glass-card text-left">
-                <div class="flex items-center gap-2.5">
-                    <div class="favicon-badge" :class="{ 'ring-2 ring-emerald-400/60': item.match }">
-                        <img x-show="item.favicon_url" :src="item.favicon_url" class="w-full h-full object-cover rounded-lg" alt="">
-                        <span x-show="!item.favicon_url" x-text="item.title.charAt(0)" class="text-xs font-medium"></span>
+            <div class="glass-card !cursor-default flex flex-col gap-2">
+                <button @click="selectItem(item)" class="text-left w-full">
+                    <div class="flex items-center gap-2.5">
+                        <div class="favicon-badge" :class="{ 'ring-2 ring-emerald-400/60': item.match }">
+                            <img x-show="item.favicon_url" :src="item.favicon_url" class="w-full h-full object-cover rounded-lg" alt="">
+                            <span x-show="!item.favicon_url" x-text="item.title.charAt(0)" class="text-xs font-medium"></span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
+                            <p class="text-[11px] text-slate-400 truncate" x-text="item.sub"></p>
+                            <p x-show="item.username" class="text-[11px] text-slate-400 truncate" x-text="item.username"></p>
+                        </div>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
-                        <p class="text-[11px] text-slate-400 truncate" x-text="item.sub"></p>
-                        <p x-show="item.username" class="text-[11px] text-slate-400 truncate" x-text="item.username"></p>
-                    </div>
-                </div>
-                <span x-show="item.match" class="mt-2 inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                    一致
-                </span>
-            </button>
+                    <span x-show="item.match" class="mt-2 inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                        一致
+                    </span>
+                </button>
+                <button
+                    x-show="item.username"
+                    @click="copyUsername(item)"
+                    type="button"
+                    class="w-full text-[11px] py-1.5 rounded-lg border border-slate-200 bg-white/50 text-slate-500 hover:bg-white/80"
+                >IDをコピー</button>
+            </div>
         </template>
     </div>
 
@@ -156,7 +166,7 @@
 
 @push('scripts')
 <script>
-function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrfToken }) {
+function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrfToken, prefillUrl, autoNew }) {
     return {
         items,
         domain,
@@ -227,6 +237,16 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
             this.secretForm = { title: '', memo: '', fields: {} };
         },
 
+        init() {
+            if (prefillUrl) {
+                this.form.url = prefillUrl;
+            }
+            if (autoNew) {
+                this.newType = 'login';
+                this.showNewPanel = true;
+            }
+        },
+
         get filteredItems() {
             const filtered = this.activeCat === 'all'
                 ? this.items
@@ -257,7 +277,12 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
             });
             const data = await res.json();
             await navigator.clipboard.writeText(data.value);
-            this.showToast('コピーしました。Safariに戻ってください');
+            this.showToast('パスワードをコピーしました');
+        },
+
+        async copyUsername(item) {
+            await navigator.clipboard.writeText(item.username || '');
+            this.showToast('IDをコピーしました');
         },
 
         async saveNew() {
