@@ -36,7 +36,9 @@ class SecretPickerApiController extends Controller
                     'title' => $c->label ?? $bookmark?->title ?? $bookmark?->url ?? '(無題)',
                     'sub' => $bookmark?->url,
                     'username' => $c->username,
-                    'favicon_url' => $bookmark?->favicon_path ? Storage::url($bookmark->favicon_path) : null,
+                    'favicon_url' => $bookmark?->favicon_path
+                        ? url(Storage::url($bookmark->favicon_path))
+                        : null,
                     'match' => $domain && $bookmark && str_contains($bookmark->url, $domain),
                 ];
             });
