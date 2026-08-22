@@ -31,4 +31,10 @@ Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function
     Route::post('/picker/reveal', [SecretPickerController::class, 'reveal'])->name('picker.reveal');
     Route::post('/picker/store', [SecretPickerController::class, 'store'])->name('picker.store');
     Route::post('/picker/store-secret', [SecretPickerController::class, 'storeSecret'])->name('picker.store-secret');
+
+    // シークレット管理画面(一覧・編集・削除)
+    Route::get('/', [SecretController::class, 'index'])->name('index');
+    Route::get('/{secret}/edit', [SecretController::class, 'edit'])->name('edit');
+    Route::patch('/{secret}', [SecretController::class, 'update'])->name('update');
+    Route::delete('/{secret}', [SecretController::class, 'destroy'])->name('destroy');
 });
