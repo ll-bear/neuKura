@@ -18,61 +18,8 @@
         <span x-text="domain"></span> に一致する項目を優先表示しています
     </p>
 
-    {{-- カテゴリチップ --}}
-    <div class="flex gap-2 mb-4 flex-wrap">
-        <template x-for="cat in categories" :key="cat.id">
-            <button
-                @click="activeCat = cat.id"
-                class="text-xs px-3 py-1.5 rounded-full border transition-colors backdrop-blur-sm"
-                :class="activeCat === cat.id ? 'chip-active' : 'chip-inactive'"
-                x-text="cat.label"
-            ></button>
-        </template>
-    </div>
-
-    {{-- カードグリッド --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {{-- 新規保存カード --}}
-        <button
-            @click="showNewPanel = true"
-            class="glass-card border-dashed flex flex-col items-center justify-center gap-1 py-5 text-slate-500 hover:text-slate-700 transition-colors"
-        >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            <span class="text-xs font-medium">新規保存</span>
-        </button>
-
-        <template x-for="item in filteredItems" :key="item.kind + '-' + item.id">
-            <div class="glass-card !cursor-default flex flex-col gap-2">
-                <button @click="selectItem(item)" class="text-left w-full">
-                    <div class="flex items-center gap-2.5">
-                        <div class="favicon-badge" :class="{ 'ring-2 ring-emerald-400/60': item.match }">
-                            <img x-show="item.favicon_url" :src="item.favicon_url" class="w-full h-full object-cover rounded-lg" alt="">
-                            <span x-show="!item.favicon_url" x-text="item.title.charAt(0)" class="text-xs font-medium"></span>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
-                            <p class="text-[11px] text-slate-400 truncate" x-text="item.sub"></p>
-                            <p x-show="item.username" class="text-[11px] text-slate-400 truncate" x-text="item.username"></p>
-                        </div>
-                    </div>
-                    <span x-show="item.match" class="mt-2 inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                        一致
-                    </span>
-                </button>
-                <button
-                    x-show="item.username"
-                    @click="copyUsername(item)"
-                    type="button"
-                    class="w-full text-[11px] py-1.5 rounded-lg border border-slate-200 bg-white/50 text-slate-500 hover:bg-white/80"
-                >IDをコピー</button>
-            </div>
-        </template>
-    </div>
-
-    {{-- 新規登録パネル --}}
-    <div x-show="showNewPanel" x-cloak x-transition class="glass-card mt-5 !cursor-default">
+    {{-- 新規登録パネル(カード一覧より前に表示。autoNew時にスクロールなしで見えるように) --}}
+    <div x-show="showNewPanel" x-cloak x-transition class="glass-card mb-5 !cursor-default">
         <p class="text-sm font-medium text-slate-800 mb-3">
             <svg class="w-4 h-4 inline -mt-0.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -154,6 +101,59 @@
                 class="glass-btn-primary flex-1"
             >保存して選択</button>
         </div>
+    </div>
+
+    {{-- カテゴリチップ --}}
+    <div class="flex gap-2 mb-4 flex-wrap">
+        <template x-for="cat in categories" :key="cat.id">
+            <button
+                @click="activeCat = cat.id"
+                class="text-xs px-3 py-1.5 rounded-full border transition-colors backdrop-blur-sm"
+                :class="activeCat === cat.id ? 'chip-active' : 'chip-inactive'"
+                x-text="cat.label"
+            ></button>
+        </template>
+    </div>
+
+    {{-- カードグリッド --}}
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {{-- 新規保存カード --}}
+        <button
+            @click="showNewPanel = true"
+            class="glass-card border-dashed flex flex-col items-center justify-center gap-1 py-5 text-slate-500 hover:text-slate-700 transition-colors"
+        >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span class="text-xs font-medium">新規保存</span>
+        </button>
+
+        <template x-for="item in filteredItems" :key="item.kind + '-' + item.id">
+            <div class="glass-card !cursor-default flex flex-col gap-2">
+                <button @click="selectItem(item)" class="text-left w-full">
+                    <div class="flex items-center gap-2.5">
+                        <div class="favicon-badge" :class="{ 'ring-2 ring-emerald-400/60': item.match }">
+                            <img x-show="item.favicon_url" :src="item.favicon_url" class="w-full h-full object-cover rounded-lg" alt="">
+                            <span x-show="!item.favicon_url" x-text="item.title.charAt(0)" class="text-xs font-medium"></span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
+                            <p class="text-[11px] text-slate-400 truncate" x-text="item.sub"></p>
+                            <p x-show="item.username" class="text-[11px] text-slate-400 truncate" x-text="item.username"></p>
+                        </div>
+                    </div>
+                    <span x-show="item.match" class="mt-2 inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                        一致
+                    </span>
+                </button>
+                <button
+                    x-show="item.username"
+                    @click="copyUsername(item)"
+                    type="button"
+                    class="w-full text-[11px] py-1.5 rounded-lg border border-slate-200 bg-white/50 text-slate-500 hover:bg-white/80"
+                >IDをコピー</button>
+            </div>
+        </template>
     </div>
 
     {{-- トースト --}}
