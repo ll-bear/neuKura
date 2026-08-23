@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Bookmark;
+use App\Models\Secret;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class ImportOnePasswordCsv extends Command
         {path : CSVファイルのパス}
         {--user= : 取り込み先のユーザーID}';
 
-    protected $description = '1PasswordエクスポートCSVからBookmark/Credentialを作成する';
+    protected $description = '1PasswordエクスポートCSVからBookmark/Credential、またはURLなしはSecretを作成する';
 
     public function handle(): int
     {
@@ -45,22 +46,41 @@ class ImportOnePasswordCsv extends Command
             return self::FAILURE;
         }
 
-        $created = 0;
-        $skippedNoUrl = 0;
+        $credentialsCreated = 0;
+        $secretsCreated = 0;
         $bookmarksCreated = 0;
         $bookmarksReused = 0;
 
-        DB::transaction(function () use ($rows, $user, &$created, &$skippedNoUrl, &$bookmarksCreated, &$bookmarksReused) {
+        DB::transaction(function () use ($rows, $user, &$credentialsCreated, &$secretsCreated, &$bookmarksCreated, &$bookmarksReused) {
             foreach ($rows as $row) {
                 $url = $this->normalizeUrl(trim($row['Url'] ?? ''));
+                $title = trim($row['Title'] ?? '');
+                $username = trim($row['Username'] ?? '');
+                $password = $row['Password'] ?? '';
+                $notes = trim($row['Notes'] ?? '') ?: null;
 
-                /*
-                // URLが空の場合はスキップ
+                // URLが無い項目は Bookmark/Credential ではなく、汎用シークレットとして保存する
                 if ($url === '') {
-                    $skippedNoUrl++;
+                    $fields = array_filter([
+                        'username' => $username,
+                        'password' => $password,
+                    ], fn ($v) => $v !== '');
+
+                    // ID/パスワードが両方とも空なら保存する意味がないのでスキップ
+                    if (empty($fields)) {
+                        continue;
+                    }
+
+                    $user->secrets()->create([
+                        'category' => 'uncategorized',
+                        'title' => $title ?: '(無題)',
+                        'fields' => $fields,
+                        'memo' => $notes,
+                    ]);
+
+                    $secretsCreated++;
                     continue;
                 }
-                */
 
                 // 同じURLのブックマークが既にあれば再利用、なければ新規作成
                 $bookmark = Bookmark::where('user_id', $user->id)
@@ -73,27 +93,26 @@ class ImportOnePasswordCsv extends Command
                     $bookmark = Bookmark::create([
                         'user_id' => $user->id,
                         'url' => $url,
-                        'title' => trim($row['Title'] ?? '') ?: $url,
+                        'title' => $title ?: $url,
                     ]);
                     $bookmarksCreated++;
                 }
 
                 $bookmark->credentials()->create([
                     'user_id' => $user->id,
-                    'label' => trim($row['Title'] ?? '') ?: null,
-                    'username' => trim($row['Username'] ?? ''),
-                    'password_encrypted' => $row['Password'] ?? '', // encryptedキャストで自動暗号化
-                    'notes' => trim($row['Notes'] ?? '') ?: null,
+                    'label' => $title ?: null,
+                    'username' => $username,
+                    'password_encrypted' => $password, // encryptedキャストで自動暗号化
+                    'notes' => $notes,
                 ]);
 
-                $created++;
+                $credentialsCreated++;
             }
         });
 
-        $this->info("完了: 認証情報 {$created}件を作成しました");
+        $this->info("完了: 認証情報 {$credentialsCreated}件、シークレット {$secretsCreated}件 を作成しました");
         $this->line("  - ブックマーク新規作成: {$bookmarksCreated}件");
         $this->line("  - 既存ブックマーク再利用: {$bookmarksReused}件");
-        $this->line("  - URLなしでスキップ: {$skippedNoUrl}件");
 
         return self::SUCCESS;
     }
