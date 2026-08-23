@@ -4,8 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookmarkWebController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\TokenController;
+use App\Http\Controllers\SecretController;
 use App\Http\Controllers\SecretPickerController;
+use App\Http\Controllers\TokenController;
 
 Route::get('/', function () {
     return redirect('/login');
