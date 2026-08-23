@@ -35,15 +35,97 @@
     {{-- 一覧 --}}
     <div class="space-y-2" x-show="filteredItems.length > 0">
         <template x-for="item in filteredItems" :key="item.type + '-' + item.id">
-            <div class="glass-card !cursor-default flex items-center justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                    <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
-                    <p class="text-[11px] text-slate-400" x-text="categoryLabel(item.category)"></p>
-                    <p x-show="item.memo" class="text-[11px] text-slate-400 truncate mt-0.5" x-text="item.memo"></p>
+            <div :data-item-key="item.type + '-' + item.id">
+                <div class="glass-card !cursor-default flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
+                        <p class="text-[11px] text-slate-400" x-text="categoryLabel(item.category)"></p>
+                        <p x-show="item.memo" class="text-[11px] text-slate-400 truncate mt-0.5" x-text="item.memo"></p>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0">
+                        <button @click="openEdit(item)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px]">編集</button>
+                        <button @click="confirmDelete(item)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px] !text-red-600 !border-red-200 hover:!bg-red-50">削除</button>
+                    </div>
                 </div>
-                <div class="flex gap-1.5 shrink-0">
-                    <button @click="openEdit(item)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px]">編集</button>
-                    <button @click="confirmDelete(item)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px] !text-red-600 !border-red-200 hover:!bg-red-50">削除</button>
+
+                {{-- カードの直下に展開する編集フォーム(ログイン情報) --}}
+                <div
+                    x-show="editing && editing.type === 'credential' && editing.id === item.id && item.type === 'credential'"
+                    x-cloak x-transition
+                    class="glass-card !cursor-default mt-2"
+                >
+                    <p class="text-sm font-medium text-slate-800 mb-3">ログイン情報を編集</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="glass-label">表示名(任意)</label>
+                            <input type="text" x-model="credentialForm.label" placeholder="未入力ならサイト名を使用" class="glass-input">
+                        </div>
+                        <div>
+                            <label class="glass-label">サイト / URL</label>
+                            <input type="text" x-model="credentialForm.url" class="glass-input">
+                        </div>
+                        <div>
+                            <label class="glass-label">ID / メールアドレス</label>
+                            <input type="text" x-model="credentialForm.username" class="glass-input">
+                        </div>
+                        <div>
+                            <label class="glass-label">パスワード</label>
+                            <div class="flex gap-2">
+                                <input type="text" x-model="credentialForm.password" class="glass-input flex-1">
+                                <button @click="credentialForm.password = generatePassword()" type="button" class="glass-btn whitespace-nowrap">自動生成</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="glass-label">コメント</label>
+                            <input type="text" x-model="credentialForm.notes" class="glass-input">
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-amber-600 mt-2" x-show="credentialForm.url">
+                        ※ URLは同じサイトの他のアカウントとブックマークを共有している場合、それらにも影響します
+                    </p>
+                    <div class="flex gap-2 pt-3">
+                        <button @click="closeEdit()" type="button" class="glass-btn flex-1">キャンセル</button>
+                        <button @click="saveCredentialEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
+                    </div>
+                </div>
+
+                {{-- カードの直下に展開する編集フォーム(シークレット) --}}
+                <div
+                    x-show="editing && editing.type === 'secret' && editing.id === item.id && item.type === 'secret'"
+                    x-cloak x-transition
+                    class="glass-card !cursor-default mt-2"
+                >
+                    <p class="text-sm font-medium text-slate-800 mb-3">
+                        <span x-text="categoryLabel(editing?.category)"></span> を編集
+                    </p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="glass-label">タイトル</label>
+                            <input type="text" x-model="secretForm.title" class="glass-input">
+                        </div>
+                        <template x-for="f in editFieldConfig" :key="f.key">
+                            <div>
+                                <label class="glass-label" x-text="f.label"></label>
+                                <div class="flex gap-2">
+                                    <input type="text" x-model="secretForm.fields[f.key]" class="glass-input flex-1">
+                                    <button
+                                        x-show="f.generate"
+                                        @click="secretForm.fields[f.key] = generatePassword()"
+                                        type="button"
+                                        class="glass-btn whitespace-nowrap"
+                                    >自動生成</button>
+                                </div>
+                            </div>
+                        </template>
+                        <div>
+                            <label class="glass-label">メモ</label>
+                            <input type="text" x-model="secretForm.memo" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-3">
+                        <button @click="closeEdit()" type="button" class="glass-btn flex-1">キャンセル</button>
+                        <button @click="saveSecretEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
+                    </div>
                 </div>
             </div>
         </template>
@@ -52,85 +134,6 @@
     <p x-show="filteredItems.length === 0" class="text-sm text-slate-400 text-center py-10">
         該当する項目はありません
     </p>
-
-    {{-- 編集パネル: ログイン情報 --}}
-    <div x-show="editing && editing.type === 'credential'" x-cloak x-transition class="glass-card mt-5 !cursor-default">
-        <p class="text-sm font-medium text-slate-800 mb-3">ログイン情報を編集</p>
-
-        <div class="space-y-3" x-show="editing">
-            <div>
-                <label class="glass-label">表示名(任意)</label>
-                <input type="text" x-model="credentialForm.label" placeholder="未入力ならサイト名を使用" class="glass-input">
-            </div>
-            <div>
-                <label class="glass-label">サイト / URL</label>
-                <input type="text" x-model="credentialForm.url" class="glass-input">
-            </div>
-            <div>
-                <label class="glass-label">ID / メールアドレス</label>
-                <input type="text" x-model="credentialForm.username" class="glass-input">
-            </div>
-            <div>
-                <label class="glass-label">パスワード</label>
-                <div class="flex gap-2">
-                    <input type="text" x-model="credentialForm.password" class="glass-input flex-1">
-                    <button @click="credentialForm.password = generatePassword()" type="button" class="glass-btn whitespace-nowrap">自動生成</button>
-                </div>
-            </div>
-            <div>
-                <label class="glass-label">コメント</label>
-                <input type="text" x-model="credentialForm.notes" class="glass-input">
-            </div>
-        </div>
-
-        <p class="text-[11px] text-amber-600 mt-2" x-show="credentialForm.url">
-            ※ URLは同じサイトの他のアカウントとブックマークを共有している場合、それらにも影響します
-        </p>
-
-        <div class="flex gap-2 pt-3">
-            <button @click="closeEdit()" type="button" class="glass-btn flex-1">キャンセル</button>
-            <button @click="saveCredentialEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
-        </div>
-    </div>
-
-    {{-- 編集パネル: シークレット(Wi-Fi/ライセンスキー等) --}}
-    <div x-show="editing && editing.type === 'secret'" x-cloak x-transition class="glass-card mt-5 !cursor-default">
-        <p class="text-sm font-medium text-slate-800 mb-3">
-            <span x-text="categoryLabel(editing?.category)"></span> を編集
-        </p>
-
-        <div class="space-y-3" x-show="editing">
-            <div>
-                <label class="glass-label">タイトル</label>
-                <input type="text" x-model="secretForm.title" class="glass-input">
-            </div>
-
-            <template x-for="f in editFieldConfig" :key="f.key">
-                <div>
-                    <label class="glass-label" x-text="f.label"></label>
-                    <div class="flex gap-2">
-                        <input type="text" x-model="secretForm.fields[f.key]" class="glass-input flex-1">
-                        <button
-                            x-show="f.generate"
-                            @click="secretForm.fields[f.key] = generatePassword()"
-                            type="button"
-                            class="glass-btn whitespace-nowrap"
-                        >自動生成</button>
-                    </div>
-                </div>
-            </template>
-
-            <div>
-                <label class="glass-label">メモ</label>
-                <input type="text" x-model="secretForm.memo" class="glass-input">
-            </div>
-        </div>
-
-        <div class="flex gap-2 pt-3">
-            <button @click="closeEdit()" type="button" class="glass-btn flex-1">キャンセル</button>
-            <button @click="saveSecretEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
-        </div>
-    </div>
 
     {{-- トースト --}}
     <div x-show="toast" x-cloak x-transition
@@ -209,6 +212,12 @@ function secretManager({
                 const res = await fetch(credentialEditUrlTemplate.replace(':id', item.id), {
                     headers: { Accept: 'application/json' },
                 });
+
+                if (!res.ok) {
+                    this.showToast(`読み込みに失敗しました(${res.status})`);
+                    return;
+                }
+
                 const data = await res.json();
                 this.editing = item;
                 this.credentialForm = {
@@ -218,12 +227,19 @@ function secretManager({
                     password: data.password || '',
                     notes: data.notes || '',
                 };
+                this.scrollToEditPanel();
                 return;
             }
 
             const res = await fetch(secretEditUrlTemplate.replace(':id', item.id), {
                 headers: { Accept: 'application/json' },
             });
+
+            if (!res.ok) {
+                this.showToast(`読み込みに失敗しました(${res.status})`);
+                return;
+            }
+
             const data = await res.json();
             this.editing = item;
             this.secretForm = {
@@ -231,6 +247,15 @@ function secretManager({
                 memo: data.memo || '',
                 fields: data.fields || {},
             };
+            this.scrollToEditPanel();
+        },
+
+        scrollToEditPanel() {
+            this.$nextTick(() => {
+                const key = `${this.editing.type}-${this.editing.id}`;
+                const el = document.querySelector(`[data-item-key="${key}"]`);
+                el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
         },
 
         closeEdit() {
