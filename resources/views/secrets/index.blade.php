@@ -2,10 +2,13 @@
 
 @section('content')
 <div x-data="secretManager({
-        secrets: @js($secrets),
-        editUrlTemplate: @js(route('secrets.edit', ':id')),
-        updateUrlTemplate: @js(route('secrets.update', ':id')),
-        destroyUrlTemplate: @js(route('secrets.destroy', ':id')),
+        items: @js($items),
+        secretEditUrlTemplate: @js(route('secrets.edit', ':id')),
+        secretUpdateUrlTemplate: @js(route('secrets.update', ':id')),
+        secretDestroyUrlTemplate: @js(route('secrets.destroy', ':id')),
+        credentialEditUrlTemplate: @js(route('secrets.credential.edit', ':id')),
+        credentialUpdateUrlTemplate: @js(route('secrets.credential.update', ':id')),
+        credentialDestroyUrlTemplate: @js(route('secrets.credential.destroy', ':id')),
         csrfToken: @js(csrf_token()),
     })"
     class="max-w-2xl mx-auto px-4 py-6"
@@ -30,28 +33,68 @@
     </div>
 
     {{-- 一覧 --}}
-    <div class="space-y-2" x-show="filteredSecrets.length > 0">
-        <template x-for="secret in filteredSecrets" :key="secret.id">
+    <div class="space-y-2" x-show="filteredItems.length > 0">
+        <template x-for="item in filteredItems" :key="item.type + '-' + item.id">
             <div class="glass-card !cursor-default flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                    <p class="text-[13px] font-medium text-slate-800 truncate" x-text="secret.title"></p>
-                    <p class="text-[11px] text-slate-400" x-text="categoryLabel(secret.category)"></p>
-                    <p x-show="secret.memo" class="text-[11px] text-slate-400 truncate mt-0.5" x-text="secret.memo"></p>
+                    <p class="text-[13px] font-medium text-slate-800 truncate" x-text="item.title"></p>
+                    <p class="text-[11px] text-slate-400" x-text="categoryLabel(item.category)"></p>
+                    <p x-show="item.memo" class="text-[11px] text-slate-400 truncate mt-0.5" x-text="item.memo"></p>
                 </div>
                 <div class="flex gap-1.5 shrink-0">
-                    <button @click="openEdit(secret)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px]">編集</button>
-                    <button @click="confirmDelete(secret)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px] !text-red-600 !border-red-200 hover:!bg-red-50">削除</button>
+                    <button @click="openEdit(item)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px]">編集</button>
+                    <button @click="confirmDelete(item)" type="button" class="glass-btn !py-1.5 !px-2.5 text-[11px] !text-red-600 !border-red-200 hover:!bg-red-50">削除</button>
                 </div>
             </div>
         </template>
     </div>
 
-    <p x-show="filteredSecrets.length === 0" class="text-sm text-slate-400 text-center py-10">
-        該当するシークレットはありません
+    <p x-show="filteredItems.length === 0" class="text-sm text-slate-400 text-center py-10">
+        該当する項目はありません
     </p>
 
-    {{-- 編集パネル --}}
-    <div x-show="editing" x-cloak x-transition class="glass-card mt-5 !cursor-default">
+    {{-- 編集パネル: ログイン情報 --}}
+    <div x-show="editing && editing.type === 'credential'" x-cloak x-transition class="glass-card mt-5 !cursor-default">
+        <p class="text-sm font-medium text-slate-800 mb-3">ログイン情報を編集</p>
+
+        <div class="space-y-3" x-show="editing">
+            <div>
+                <label class="glass-label">表示名(任意)</label>
+                <input type="text" x-model="credentialForm.label" placeholder="未入力ならサイト名を使用" class="glass-input">
+            </div>
+            <div>
+                <label class="glass-label">サイト / URL</label>
+                <input type="text" x-model="credentialForm.url" class="glass-input">
+            </div>
+            <div>
+                <label class="glass-label">ID / メールアドレス</label>
+                <input type="text" x-model="credentialForm.username" class="glass-input">
+            </div>
+            <div>
+                <label class="glass-label">パスワード</label>
+                <div class="flex gap-2">
+                    <input type="text" x-model="credentialForm.password" class="glass-input flex-1">
+                    <button @click="credentialForm.password = generatePassword()" type="button" class="glass-btn whitespace-nowrap">自動生成</button>
+                </div>
+            </div>
+            <div>
+                <label class="glass-label">コメント</label>
+                <input type="text" x-model="credentialForm.notes" class="glass-input">
+            </div>
+        </div>
+
+        <p class="text-[11px] text-amber-600 mt-2" x-show="credentialForm.url">
+            ※ URLは同じサイトの他のアカウントとブックマークを共有している場合、それらにも影響します
+        </p>
+
+        <div class="flex gap-2 pt-3">
+            <button @click="closeEdit()" type="button" class="glass-btn flex-1">キャンセル</button>
+            <button @click="saveCredentialEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
+        </div>
+    </div>
+
+    {{-- 編集パネル: シークレット(Wi-Fi/ライセンスキー等) --}}
+    <div x-show="editing && editing.type === 'secret'" x-cloak x-transition class="glass-card mt-5 !cursor-default">
         <p class="text-sm font-medium text-slate-800 mb-3">
             <span x-text="categoryLabel(editing?.category)"></span> を編集
         </p>
@@ -59,17 +102,17 @@
         <div class="space-y-3" x-show="editing">
             <div>
                 <label class="glass-label">タイトル</label>
-                <input type="text" x-model="editForm.title" class="glass-input">
+                <input type="text" x-model="secretForm.title" class="glass-input">
             </div>
 
             <template x-for="f in editFieldConfig" :key="f.key">
                 <div>
                     <label class="glass-label" x-text="f.label"></label>
                     <div class="flex gap-2">
-                        <input type="text" x-model="editForm.fields[f.key]" class="glass-input flex-1">
+                        <input type="text" x-model="secretForm.fields[f.key]" class="glass-input flex-1">
                         <button
                             x-show="f.generate"
-                            @click="editForm.fields[f.key] = generatePassword()"
+                            @click="secretForm.fields[f.key] = generatePassword()"
                             type="button"
                             class="glass-btn whitespace-nowrap"
                         >自動生成</button>
@@ -79,13 +122,13 @@
 
             <div>
                 <label class="glass-label">メモ</label>
-                <input type="text" x-model="editForm.memo" class="glass-input">
+                <input type="text" x-model="secretForm.memo" class="glass-input">
             </div>
         </div>
 
         <div class="flex gap-2 pt-3">
             <button @click="closeEdit()" type="button" class="glass-btn flex-1">キャンセル</button>
-            <button @click="saveEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
+            <button @click="saveSecretEdit()" type="button" class="glass-btn-primary flex-1">保存</button>
         </div>
     </div>
 
@@ -99,17 +142,24 @@
 
 @push('scripts')
 <script>
-function secretManager({ secrets, editUrlTemplate, updateUrlTemplate, destroyUrlTemplate, csrfToken }) {
+function secretManager({
+    items,
+    secretEditUrlTemplate, secretUpdateUrlTemplate, secretDestroyUrlTemplate,
+    credentialEditUrlTemplate, credentialUpdateUrlTemplate, credentialDestroyUrlTemplate,
+    csrfToken,
+}) {
     return {
-        secrets,
+        items,
         activeCat: 'all',
         editing: null,
-        editForm: { title: '', memo: '', fields: {} },
+        credentialForm: { label: '', url: '', username: '', password: '', notes: '' },
+        secretForm: { title: '', memo: '', fields: {} },
         toast: false,
         toastMessage: '',
 
         categories: [
             { id: 'all', label: 'すべて' },
+            { id: 'login', label: 'ログイン' },
             { id: 'wifi', label: 'Wi-Fi' },
             { id: 'license', label: 'ライセンスキー' },
             { id: 'pin', label: 'PIN' },
@@ -117,7 +167,7 @@ function secretManager({ secrets, editUrlTemplate, updateUrlTemplate, destroyUrl
             { id: 'other', label: 'その他' },
         ],
 
-        // picker画面と同じフィールド構成(カテゴリごとの入力項目定義)
+        // secretsのカテゴリごとの入力項目定義(picker画面と同じ構成)
         secretFieldConfig: {
             wifi: [
                 { key: 'ssid', label: 'SSID' },
@@ -143,25 +193,40 @@ function secretManager({ secrets, editUrlTemplate, updateUrlTemplate, destroyUrl
             return c ? c.label : id;
         },
 
-        get filteredSecrets() {
+        get filteredItems() {
             return this.activeCat === 'all'
-                ? this.secrets
-                : this.secrets.filter(s => s.category === this.activeCat);
+                ? this.items
+                : this.items.filter(i => i.category === this.activeCat);
         },
 
         get editFieldConfig() {
-            if (!this.editing) return [];
+            if (!this.editing || this.editing.type !== 'secret') return [];
             return this.secretFieldConfig[this.editing.category] || this.secretFieldConfig.uncategorized;
         },
 
-        async openEdit(secret) {
-            const res = await fetch(editUrlTemplate.replace(':id', secret.id), {
+        async openEdit(item) {
+            if (item.type === 'credential') {
+                const res = await fetch(credentialEditUrlTemplate.replace(':id', item.id), {
+                    headers: { Accept: 'application/json' },
+                });
+                const data = await res.json();
+                this.editing = item;
+                this.credentialForm = {
+                    label: data.label || '',
+                    url: data.url || '',
+                    username: data.username || '',
+                    password: data.password || '',
+                    notes: data.notes || '',
+                };
+                return;
+            }
+
+            const res = await fetch(secretEditUrlTemplate.replace(':id', item.id), {
                 headers: { Accept: 'application/json' },
             });
             const data = await res.json();
-
-            this.editing = secret;
-            this.editForm = {
+            this.editing = item;
+            this.secretForm = {
                 title: data.title,
                 memo: data.memo || '',
                 fields: data.fields || {},
@@ -170,19 +235,20 @@ function secretManager({ secrets, editUrlTemplate, updateUrlTemplate, destroyUrl
 
         closeEdit() {
             this.editing = null;
-            this.editForm = { title: '', memo: '', fields: {} };
+            this.credentialForm = { label: '', url: '', username: '', password: '', notes: '' };
+            this.secretForm = { title: '', memo: '', fields: {} };
         },
 
-        async saveEdit() {
-            if (!this.editing || !this.editForm.title) return;
+        async saveCredentialEdit() {
+            if (!this.editing || !this.credentialForm.url || !this.credentialForm.password) return;
 
-            const res = await fetch(updateUrlTemplate.replace(':id', this.editing.id), {
+            const res = await fetch(credentialUpdateUrlTemplate.replace(':id', this.editing.id), {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                 },
-                body: JSON.stringify(this.editForm),
+                body: JSON.stringify(this.credentialForm),
             });
 
             if (!res.ok) {
@@ -190,21 +256,49 @@ function secretManager({ secrets, editUrlTemplate, updateUrlTemplate, destroyUrl
                 return;
             }
 
-            // ローカルの一覧表示も更新
-            const target = this.secrets.find(s => s.id === this.editing.id);
+            const target = this.items.find(i => i.type === 'credential' && i.id === this.editing.id);
             if (target) {
-                target.title = this.editForm.title;
-                target.memo = this.editForm.memo;
+                target.title = this.credentialForm.label || target.title;
+                target.memo = this.credentialForm.notes;
             }
 
             this.showToast('保存しました');
             this.closeEdit();
         },
 
-        async confirmDelete(secret) {
-            if (!confirm(`「${secret.title}」を削除します。よろしいですか？`)) return;
+        async saveSecretEdit() {
+            if (!this.editing || !this.secretForm.title) return;
 
-            const res = await fetch(destroyUrlTemplate.replace(':id', secret.id), {
+            const res = await fetch(secretUpdateUrlTemplate.replace(':id', this.editing.id), {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify(this.secretForm),
+            });
+
+            if (!res.ok) {
+                this.showToast('保存に失敗しました');
+                return;
+            }
+
+            const target = this.items.find(i => i.type === 'secret' && i.id === this.editing.id);
+            if (target) {
+                target.title = this.secretForm.title;
+                target.memo = this.secretForm.memo;
+            }
+
+            this.showToast('保存しました');
+            this.closeEdit();
+        },
+
+        async confirmDelete(item) {
+            if (!confirm(`「${item.title}」を削除します。よろしいですか？`)) return;
+
+            const urlTemplate = item.type === 'credential' ? credentialDestroyUrlTemplate : secretDestroyUrlTemplate;
+
+            const res = await fetch(urlTemplate.replace(':id', item.id), {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': csrfToken },
             });
@@ -214,7 +308,7 @@ function secretManager({ secrets, editUrlTemplate, updateUrlTemplate, destroyUrl
                 return;
             }
 
-            this.secrets = this.secrets.filter(s => s.id !== secret.id);
+            this.items = this.items.filter(i => !(i.type === item.type && i.id === item.id));
             this.showToast('削除しました');
         },
 

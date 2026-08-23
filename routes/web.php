@@ -38,4 +38,9 @@ Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function
     Route::get('/{secret}/edit', [SecretController::class, 'edit'])->name('edit');
     Route::patch('/{secret}', [SecretController::class, 'update'])->name('update');
     Route::delete('/{secret}', [SecretController::class, 'destroy'])->name('destroy');
+
+    // ログイン情報(credential)の編集・削除もここに統合
+    Route::get('/credential/{credential}/edit', [SecretController::class, 'editCredential'])->name('credential.edit');
+    Route::patch('/credential/{credential}', [SecretController::class, 'updateCredential'])->name('credential.update');
+    Route::delete('/credential/{credential}', [SecretController::class, 'destroyCredential'])->name('credential.destroy');
 });
