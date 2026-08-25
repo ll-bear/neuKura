@@ -54,6 +54,19 @@ class BookmarkService
     {
         $queryVector = $this->ollamaService->embed($query);
 
+        // ローカルLLM(埋め込み生成)に接続できない等でベクトルが得られなかった場合は、
+        // RAG検索ではなく通常のワード検索にフォールバックする。
+        if (empty($queryVector)) {
+            return $this->bookmarkRepository
+                ->searchByKeyword($userId, $query)
+                ->map(function ($bookmark) {
+                    // フロント側は similarity が null なら類似度バーを表示しない
+                    $bookmark->similarity = null;
+                    return $bookmark;
+                })
+                ->values();
+        }
+
         $bookmarks = $this->bookmarkRepository->findWithVectorsByUser($userId);
 
         return $bookmarks

@@ -18,6 +18,7 @@ Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {
     Route::get('/bookmarks', [BookmarkWebController::class, 'index'])->name('bookmarks.index');
+    Route::get('/bookmarks/paginate', [BookmarkWebController::class, 'paginate'])->name('bookmarks.paginate');
     
     Route::resource('category', CategoryController::class, ['only' => ['index', 'store', 'update', 'destroy', 'sort']]);
     Route::post('category/sort', [CategoryController::class, 'sort'])->name('category.sort');

@@ -22,14 +22,16 @@
                     </div>
                     <span class="text-sm text-slate-500 hidden sm:block">{{ auth()->user()->name }}</span>
                 </div>
+
                 <a href="{{ route('secrets.index') }}"
-                class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"
-                title="シークレット管理">
+                   class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                   title="シークレット管理">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                     </svg>
                 </a>
+
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
@@ -154,7 +156,7 @@
                                        x-text="bm.summary || bm.memo || '要約を生成中です...'"></p>
                                     <p class="text-xs text-slate-400 truncate" x-text="bm.url"></p>
 
-                                    {{-- RAG類似度（検索時のみ） --}}
+                                    {{-- RAG類似度（検索時のみ、キーワード検索フォールバック時は非表示） --}}
                                     <div x-show="search && bm.similarity != null" class="pt-1 flex items-center gap-2">
                                         <div class="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
                                             <div class="h-full bg-gradient-to-r from-violet-400 to-blue-400 rounded-full"
@@ -224,12 +226,22 @@
                             </div>
                         </article>
                     </template>
+
+                    {{-- もっと見る(検索していない時、かつ次のページがある時だけ表示) --}}
+                    <div x-show="!search && pagination.currentPage < pagination.lastPage" class="pt-2 pb-1 text-center">
+                        <button @click="loadMore()"
+                                :disabled="loadingMore"
+                                class="px-5 py-2 rounded-xl text-sm font-medium text-violet-600 bg-violet-50
+                                       hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <span x-text="loadingMore ? '読み込み中...' : 'もっと見る'"></span>
+                        </button>
+                    </div>
                 </div>
 
                 {{-- フッター --}}
                 <div class="px-5 py-3 border-t border-slate-50 bg-slate-50/50">
                     <p class="text-xs text-slate-400"
-                       x-text="`${bookmarks.length} 件のブックマーク`"></p>
+                       x-text="`${bookmarks.length} / ${pagination.total} 件のブックマーク`"></p>
                 </div>
             </div>
 
@@ -444,8 +456,14 @@ function bookmarkApp() {
             },
         ],
 
-        // データ
-        bookmarks: @json($bookmarks->load('category')),
+        // データ(paginatorの ->load() 転送バグを避けるため items() を渡す。categoryはリポジトリ側でeager loaded済み)
+        bookmarks: @json($bookmarks->items()),
+        pagination: {
+            currentPage: {{ $bookmarks->currentPage() }},
+            lastPage: {{ $bookmarks->lastPage() }},
+            total: {{ $bookmarks->total() }},
+        },
+        loadingMore: false,
         categories: @json($categories),
 
         // SEARCH
@@ -477,6 +495,29 @@ function bookmarkApp() {
                 return this.selectedCategory === 'すべて'
                     || b.category?.name === this.selectedCategory;
             });
+        },
+
+        async loadMore() {
+            if (this.loadingMore || this.pagination.currentPage >= this.pagination.lastPage) return;
+            this.loadingMore = true;
+            try {
+                const nextPage = this.pagination.currentPage + 1;
+                const res = await fetch(`{{ route('bookmarks.paginate') }}?page=${nextPage}`, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.bookmarks = [...this.bookmarks, ...data.data];
+                this.pagination = {
+                    currentPage: data.current_page,
+                    lastPage: data.last_page,
+                    total: data.total,
+                };
+            } catch (e) {
+                console.error(e);
+            } finally {
+                this.loadingMore = false;
+            }
         },
 
         previewHost(url) {
@@ -558,6 +599,7 @@ function bookmarkApp() {
 
                 this.bookmarks = this.bookmarks.filter(b => b.id !== id);
                 this.searchResults = this.searchResults.filter(b => b.id !== id);
+                this.pagination.total = Math.max(0, this.pagination.total - 1);
             } catch (e) {
                 console.error(e);
             }
