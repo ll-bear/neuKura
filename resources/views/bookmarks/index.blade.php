@@ -83,7 +83,7 @@
                         </div>
                         <input type="text" x-model="search"
                                @input.debounce.500ms="handleSearch()"
-                               placeholder="自然言語で検索... 例：クリーム不要のパスタ"
+                               placeholder="検索..."
                                class="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl
                                       text-slate-700 placeholder-slate-300 text-sm
                                       focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent
