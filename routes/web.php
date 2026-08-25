@@ -33,6 +33,7 @@ Route::middleware(['auth'])->prefix('secrets')->name('secrets.')->group(function
     Route::post('/picker/reveal', [SecretPickerController::class, 'reveal'])->name('picker.reveal');
     Route::post('/picker/store', [SecretPickerController::class, 'store'])->name('picker.store');
     Route::post('/picker/store-secret', [SecretPickerController::class, 'storeSecret'])->name('picker.store-secret');
+    Route::post('/picker/assign', [SecretPickerController::class, 'assignSecret'])->name('picker.assign');
 
     // シークレット管理画面(一覧・編集・削除)
     Route::get('/', [SecretController::class, 'index'])->name('index');

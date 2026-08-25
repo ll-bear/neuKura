@@ -32,7 +32,7 @@
         </template>
     </div>
 
-    {{-- 一覧 --}}
+    {{-- 一覧(カードの直下に編集フォームを展開) --}}
     <div class="space-y-2" x-show="filteredItems.length > 0">
         <template x-for="item in filteredItems" :key="item.type + '-' + item.id">
             <div :data-item-key="item.type + '-' + item.id">
@@ -170,25 +170,15 @@ function secretManager({
             { id: 'other', label: 'その他' },
         ],
 
-        // secretsのカテゴリごとの入力項目定義(picker画面と同じ構成)
-        secretFieldConfig: {
-            wifi: [
-                { key: 'ssid', label: 'SSID' },
-                { key: 'password', label: 'パスワード', generate: true },
-            ],
-            license: [
-                { key: 'product', label: '製品名' },
-                { key: 'key', label: 'ライセンスキー' },
-            ],
-            pin: [
-                { key: 'pin', label: 'PINコード' },
-            ],
-            other: [
-                { key: 'value', label: '値' },
-            ],
-            uncategorized: [
-                { key: 'value', label: '値' },
-            ],
+        // フィールドキー→表示ラベルの対応(未知のキーはそのままキー名を表示)
+        fieldLabels: {
+            username: 'ID / ユーザー名',
+            password: 'パスワード',
+            ssid: 'SSID',
+            product: '製品名',
+            key: 'ライセンスキー',
+            pin: 'PINコード',
+            value: '値',
         },
 
         categoryLabel(id) {
@@ -202,9 +192,15 @@ function secretManager({
                 : this.items.filter(i => i.category === this.activeCat);
         },
 
+        // 固定のカテゴリ別構成ではなく、実際に保存されているfieldsのキーをそのまま表示する
+        // (1Passwordインポート等、カテゴリ標準の構成と異なるキーでも取りこぼさないため)
         get editFieldConfig() {
             if (!this.editing || this.editing.type !== 'secret') return [];
-            return this.secretFieldConfig[this.editing.category] || this.secretFieldConfig.uncategorized;
+            return Object.keys(this.secretForm.fields).map(k => ({
+                key: k,
+                label: this.fieldLabels[k] || k,
+                generate: ['password', 'key', 'pin'].includes(k),
+            }));
         },
 
         async openEdit(item) {

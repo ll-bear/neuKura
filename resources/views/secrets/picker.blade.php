@@ -6,6 +6,7 @@
         domain: @js($domain),
         storeUrl: @js(route('secrets.picker.store')),
         storeSecretUrl: @js(route('secrets.picker.store-secret')),
+        assignUrl: @js(route('secrets.picker.assign')),
         revealUrl: @js(route('secrets.picker.reveal')),
         csrfToken: @js(csrf_token()),
         prefillUrl: @js($prefillUrl),
@@ -103,6 +104,80 @@
         </div>
     </div>
 
+    {{-- 未分類 → カテゴリ変換パネル --}}
+    <div x-show="assigning" x-cloak x-transition class="glass-card mb-5 !cursor-default">
+        <p class="text-sm font-medium text-slate-800 mb-1">「<span x-text="assigning?.title"></span>」を登録</p>
+        <p class="text-xs text-slate-400 mb-3">カテゴリを選んで、正式な項目として保存してください</p>
+
+        <div class="flex gap-2 mb-4 flex-wrap">
+            <template x-for="t in assignTypes" :key="t.id">
+                <button
+                    @click="selectAssignType(t.id)"
+                    type="button"
+                    class="text-xs px-3 py-1.5 rounded-full border transition-colors"
+                    :class="assignForm.category === t.id ? 'chip-active' : 'chip-inactive'"
+                    x-text="t.label"
+                ></button>
+            </template>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="glass-label">タイトル</label>
+                <input type="text" x-model="assignForm.title" class="glass-input">
+            </div>
+
+            {{-- ログインへ変換する場合 --}}
+            <template x-if="assignForm.category === 'login'">
+                <div class="space-y-3">
+                    <div>
+                        <label class="glass-label">サイト / URL</label>
+                        <input type="text" x-model="assignForm.url" placeholder="example.com" class="glass-input">
+                    </div>
+                    <div>
+                        <label class="glass-label">ID / メールアドレス</label>
+                        <input type="text" x-model="assignForm.username" class="glass-input">
+                    </div>
+                    <div>
+                        <label class="glass-label">パスワード</label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="assignForm.password" class="glass-input flex-1">
+                            <button @click="assignForm.password = generatePassword()" type="button" class="glass-btn whitespace-nowrap">自動生成</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            {{-- Wi-Fi / ライセンスキー / PIN へ変換する場合 --}}
+            <template x-if="assignForm.category !== 'login'">
+                <template x-for="f in currentAssignFields" :key="f.key">
+                    <div>
+                        <label class="glass-label" x-text="f.label"></label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="assignForm.fields[f.key]" class="glass-input flex-1">
+                            <button
+                                x-show="f.generate"
+                                @click="assignForm.fields[f.key] = generatePassword()"
+                                type="button"
+                                class="glass-btn whitespace-nowrap"
+                            >自動生成</button>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+            <div>
+                <label class="glass-label">メモ</label>
+                <input type="text" x-model="assignForm.memo" class="glass-input">
+            </div>
+        </div>
+
+        <div class="flex gap-2 pt-3">
+            <button @click="closeAssign()" type="button" class="glass-btn flex-1">キャンセル</button>
+            <button @click="saveAssign()" type="button" class="glass-btn-primary flex-1">保存</button>
+        </div>
+    </div>
+
     {{-- カテゴリチップ --}}
     <div class="flex gap-2 mb-4 flex-wrap">
         <template x-for="cat in categories" :key="cat.id">
@@ -130,7 +205,7 @@
 
         <template x-for="item in filteredItems" :key="item.kind + '-' + item.id">
             <div class="glass-card !cursor-default flex flex-col gap-2">
-                <button @click="selectItem(item)" class="text-left w-full">
+                <button @click="handleCardTap(item)" class="text-left w-full">
                     <div class="flex items-center gap-2.5">
                         <div class="favicon-badge" :class="{ 'ring-2 ring-emerald-400/60': item.match }">
                             <img x-show="item.favicon_url" :src="item.favicon_url" class="w-full h-full object-cover rounded-lg" alt="">
@@ -145,6 +220,9 @@
                     <span x-show="item.match" class="mt-2 inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                         一致
                     </span>
+                    <span x-show="item.category === 'uncategorized'" class="mt-2 inline-block text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                        タップして登録
+                    </span>
                 </button>
                 <button
                     x-show="item.username"
@@ -156,6 +234,10 @@
         </template>
     </div>
 
+    <p x-show="filteredItems.length === 0" class="text-sm text-slate-400 text-center py-10">
+        該当する項目はありません
+    </p>
+
     {{-- トースト --}}
     <div x-show="toast" x-cloak x-transition
         class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-sm px-4 py-2.5 rounded-full shadow-lg"
@@ -166,12 +248,13 @@
 
 @push('scripts')
 <script>
-function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrfToken, prefillUrl, autoNew }) {
+function secretPicker({ items, domain, storeUrl, storeSecretUrl, assignUrl, revealUrl, csrfToken, prefillUrl, autoNew }) {
     return {
         items,
         domain,
         activeCat: 'all',
         showNewPanel: false,
+        assigning: null,
         toast: false,
         toastMessage: '',
         form: { url: '', username: '', password: '', comment: '' },
@@ -212,6 +295,15 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
         },
         secretForm: { title: '', memo: '', fields: {} },
 
+        // 未分類→カテゴリ変換パネルの種別(ログインを含む)
+        assignTypes: [
+            { id: 'login', label: 'ログイン' },
+            { id: 'wifi', label: 'Wi-Fi' },
+            { id: 'license', label: 'ライセンスキー' },
+            { id: 'pin', label: 'PIN' },
+        ],
+        assignForm: { category: 'login', title: '', url: '', username: '', password: '', memo: '', fields: {} },
+
         get newTypeLabel() {
             const t = this.newTypes.find(t => t.id === this.newType);
             return t ? t.label : '';
@@ -219,6 +311,10 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
 
         get currentSecretFields() {
             return this.secretFieldConfig[this.newType] || [];
+        },
+
+        get currentAssignFields() {
+            return this.secretFieldConfig[this.assignForm.category] || [];
         },
 
         selectNewType(id) {
@@ -250,7 +346,7 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
         get filteredItems() {
             const filtered = this.activeCat === 'all'
                 ? this.items
-                : this.items.filter(i => (i.kind === 'credential' ? 'login' : i.sub) === this.activeCat);
+                : this.items.filter(i => (i.kind === 'credential' ? 'login' : i.category) === this.activeCat);
             return [...filtered].sort((a, b) => (b.match ? 1 : 0) - (a.match ? 1 : 0));
         },
 
@@ -264,6 +360,15 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
             const values = new Uint32Array(8);
             crypto.getRandomValues(values);
             return Array.from(values, v => chars[v % chars.length]).join('');
+        },
+
+        // カードタップ時: 未分類は変換フォームを開き、それ以外は従来通りコピーする
+        handleCardTap(item) {
+            if (item.kind === 'secret' && item.category === 'uncategorized') {
+                this.openAssign(item);
+                return;
+            }
+            this.selectItem(item);
         },
 
         async selectItem(item) {
@@ -283,6 +388,89 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
         async copyUsername(item) {
             await navigator.clipboard.writeText(item.username || '');
             this.showToast('IDをコピーしました');
+        },
+
+        async openAssign(item) {
+            // 既存の未分類secretの中身(fields)を取得して変換フォームに引き継ぐ
+            const res = await fetch(`/secrets/${item.id}/edit`, {
+                headers: { Accept: 'application/json' },
+            });
+            const data = await res.json();
+            const fields = data.fields || {};
+
+            this.assigning = item;
+            this.assignForm = {
+                category: 'login',
+                title: data.title || item.title,
+                url: prefillUrl || '',
+                username: fields.username || '',
+                password: fields.password || fields.key || fields.pin || fields.value || '',
+                memo: data.memo || '',
+                fields: {},
+            };
+        },
+
+        selectAssignType(id) {
+            this.assignForm.category = id;
+            if (id !== 'login') {
+                const fields = {};
+                (this.secretFieldConfig[id] || []).forEach(f => {
+                    // 既存の値(password等)を、対応しそうなキーへできる範囲で引き継ぐ
+                    fields[f.key] = this.assignForm.password && f.key === 'password' ? this.assignForm.password
+                        : this.assignForm.password && f.key === 'key' ? this.assignForm.password
+                        : this.assignForm.password && f.key === 'pin' ? this.assignForm.password
+                        : '';
+                });
+                this.assignForm.fields = fields;
+            }
+        },
+
+        closeAssign() {
+            this.assigning = null;
+            this.assignForm = { category: 'login', title: '', url: '', username: '', password: '', memo: '', fields: {} };
+        },
+
+        async saveAssign() {
+            if (!this.assigning || !this.assignForm.title) return;
+            if (this.assignForm.category === 'login' && (!this.assignForm.url || !this.assignForm.password)) return;
+
+            const payload = {
+                secret_id: this.assigning.id,
+                category: this.assignForm.category,
+                title: this.assignForm.title,
+                memo: this.assignForm.memo,
+            };
+
+            if (this.assignForm.category === 'login') {
+                payload.url = this.assignForm.url;
+                payload.username = this.assignForm.username;
+                payload.password = this.assignForm.password;
+            } else {
+                payload.fields = this.assignForm.fields;
+            }
+
+            const res = await fetch(assignUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                this.showToast('保存に失敗しました');
+                return;
+            }
+
+            const data = await res.json();
+
+            // 一覧から元の未分類項目を除去
+            this.items = this.items.filter(i => !(i.kind === 'secret' && i.id === this.assigning.id));
+
+            await navigator.clipboard.writeText(data.value);
+            this.showToast('登録してコピーしました');
+            this.closeAssign();
         },
 
         async saveNew() {
@@ -306,6 +494,7 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
                 username: this.form.username,
                 favicon_url: null,
                 match: false,
+                category: 'login',
             });
 
             await navigator.clipboard.writeText(data.value);
@@ -339,6 +528,7 @@ function secretPicker({ items, domain, storeUrl, storeSecretUrl, revealUrl, csrf
                 username: null,
                 favicon_url: null,
                 match: false,
+                category: this.newType,
             });
 
             await navigator.clipboard.writeText(data.value);

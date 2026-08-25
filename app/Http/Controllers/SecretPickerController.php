@@ -29,12 +29,12 @@ class SecretPickerController extends Controller
                     'username' => $c->username,
                     'favicon_url' => $bookmark?->favicon_path ? Storage::url($bookmark->favicon_path) : null,
                     'match' => $domain && $bookmark && str_contains($bookmark->url, $domain),
+                    'category' => 'login',
                 ];
             });
 
         $secrets = $user->secrets()
-            ->select('id', 'title', 'category')
-            ->get()
+            ->get(['id', 'category', 'title'])
             ->map(fn ($s) => [
                 'kind' => 'secret',
                 'id' => $s->id,
@@ -43,6 +43,7 @@ class SecretPickerController extends Controller
                 'username' => null,
                 'favicon_url' => null,
                 'match' => false,
+                'category' => $s->category,
             ]);
 
         $items = $credentials->concat($secrets)
@@ -53,8 +54,6 @@ class SecretPickerController extends Controller
             'items' => $items,
             'domain' => $domain,
             'source' => $request->query('source', 'web'),
-            // 新規登録の呼び水: URLありでpickerに来た場合、フォームにプリフィルし
-            // autoNew=1 なら新規登録パネルを開いた状態で表示する
             'prefillUrl' => $request->query('url'),
             'autoNew' => $request->boolean('autoNew'),
         ]);
@@ -72,13 +71,11 @@ class SecretPickerController extends Controller
         if ($validated['kind'] === 'credential') {
             $item = $user->credentials()->findOrFail($validated['id']);
 
-            // encryptedキャストにより取得時点で復号済み
             return response()->json(['value' => $item->password_encrypted]);
         }
 
         $item = $user->secrets()->findOrFail($validated['id']);
 
-        // secretsは複数フィールド持ちうるので、代表フィールド(password/key)を優先返却
         $value = $item->fields['password'] ?? $item->fields['key'] ?? reset($item->fields);
 
         return response()->json(['value' => $value]);
@@ -96,7 +93,6 @@ class SecretPickerController extends Controller
         $title = parse_url($validated['url'], PHP_URL_HOST) ?? $validated['url'];
         $user = $request->user();
 
-        // 同一URLの既存bookmarkがあれば再利用(同一サイトへの複数アカウント登録に対応)
         $bookmark = $user->bookmarks()->where('url', $validated['url'])->first();
 
         if (! $bookmark) {
@@ -124,10 +120,6 @@ class SecretPickerController extends Controller
         ]);
     }
 
-    /**
-     * URLに紐づかない汎用シークレット(Wi-Fi/ライセンスキー/PINなど)の新規保存。
-     * カテゴリごとにfieldsのキー構成が変わるため、バリデーションはcategoryで分岐する。
-     */
     public function storeSecret(Request $request)
     {
         $validated = $request->validate([
@@ -145,7 +137,82 @@ class SecretPickerController extends Controller
             'memo' => $validated['memo'] ?? null,
         ]);
 
-        // 代表フィールド(picker上でそのままコピーする値)を決定
+        $primaryValue = $validated['fields']['password']
+            ?? $validated['fields']['key']
+            ?? reset($validated['fields']);
+
+        return response()->json([
+            'kind' => 'secret',
+            'id' => $secret->id,
+            'value' => $primaryValue,
+        ]);
+    }
+
+    /**
+     * 「未分類」のsecretを正式なカテゴリ(ログイン/Wi-Fi/ライセンスキー/PIN)へ変換する。
+     * - login: bookmark+credentialを新規作成(または既存bookmark再利用)し、元のsecretは削除
+     * - それ以外: secretのcategory/title/fields/memoを直接更新(category変更を許可する唯一の経路)
+     */
+    public function assignSecret(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'secret_id' => 'required|integer',
+            'category' => 'required|in:login,wifi,license,pin',
+            'title' => 'required|string|max:255',
+            'memo' => 'nullable|string|max:1000',
+            // login用
+            'url' => 'required_if:category,login|nullable|string|max:255',
+            'username' => 'nullable|string|max:255',
+            'password' => 'required_if:category,login|nullable|string|max:255',
+            // wifi/license/pin用
+            'fields' => 'required_unless:category,login|nullable|array',
+            'fields.*' => 'nullable|string|max:1000',
+        ]);
+
+        $secret = $user->secrets()->findOrFail($validated['secret_id']);
+
+        if ($validated['category'] === 'login') {
+            $bookmark = $user->bookmarks()->where('url', $validated['url'])->first();
+
+            if (! $bookmark) {
+                $bookmark = Bookmark::create([
+                    'user_id' => $user->id,
+                    'category_id' => null,
+                    'title' => $validated['title'],
+                    'url' => $validated['url'],
+                ]);
+
+                FetchFaviconJob::dispatch($bookmark->id);
+            }
+
+            $credential = $user->credentials()->create([
+                'bookmark_id' => $bookmark->id,
+                'label' => $validated['title'],
+                'username' => $validated['username'] ?? '',
+                'password_encrypted' => $validated['password'],
+                'notes' => $validated['memo'] ?? null,
+            ]);
+
+            $secret->delete();
+
+            return response()->json([
+                'kind' => 'credential',
+                'id' => $credential->id,
+                'value' => $credential->password_encrypted,
+                'removed_secret_id' => $secret->id,
+            ]);
+        }
+
+        // wifi / license / pin への変換
+        $secret->update([
+            'category' => $validated['category'],
+            'title' => $validated['title'],
+            'fields' => $validated['fields'],
+            'memo' => $validated['memo'] ?? null,
+        ]);
+
         $primaryValue = $validated['fields']['password']
             ?? $validated['fields']['key']
             ?? reset($validated['fields']);
