@@ -74,6 +74,19 @@
                                 <input type="text" x-model="credentialForm.password" class="glass-input flex-1">
                                 <button @click="credentialForm.password = generatePassword()" type="button" class="glass-btn whitespace-nowrap">自動生成</button>
                             </div>
+                            <div class="flex items-center gap-3 text-[11px] text-slate-500 mt-1.5">
+                                <div class="flex gap-1">
+                                    <template x-for="len in genLengthOptions" :key="len">
+                                        <button type="button" @click="genLength = len"
+                                            class="px-2 py-0.5 rounded-full border"
+                                            :class="genLength === len ? 'chip-active' : 'chip-inactive'"
+                                            x-text="len + '文字'"></button>
+                                    </template>
+                                </div>
+                                <label class="flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" x-model="genSymbols" class="w-3 h-3">記号を含める
+                                </label>
+                            </div>
                         </div>
                         <div>
                             <label class="glass-label">コメント</label>
@@ -114,6 +127,19 @@
                                         type="button"
                                         class="glass-btn whitespace-nowrap"
                                     >自動生成</button>
+                                </div>
+                                <div x-show="f.generate" class="flex items-center gap-3 text-[11px] text-slate-500 mt-1.5">
+                                    <div class="flex gap-1">
+                                        <template x-for="len in genLengthOptions" :key="len">
+                                            <button type="button" @click="genLength = len"
+                                                class="px-2 py-0.5 rounded-full border"
+                                                :class="genLength === len ? 'chip-active' : 'chip-inactive'"
+                                                x-text="len + '文字'"></button>
+                                        </template>
+                                    </div>
+                                    <label class="flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" x-model="genSymbols" class="w-3 h-3">記号を含める
+                                    </label>
                                 </div>
                             </div>
                         </template>
@@ -159,6 +185,11 @@ function secretManager({
         secretForm: { title: '', memo: '', fields: {} },
         toast: false,
         toastMessage: '',
+
+        // パスワード生成の共通設定
+        genLength: 8,
+        genLengthOptions: [8, 10, 12],
+        genSymbols: true,
 
         categories: [
             { id: 'all', label: 'すべて' },
@@ -333,13 +364,13 @@ function secretManager({
             this.showToast('削除しました');
         },
 
-        generatePassword(length = 8, includeSymbols = true) {
+        generatePassword() {
             const lower = 'abcdefghijkmnopqrstuvwxyz';
             const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
             const digits = '23456789';
             const symbols = '!@#$%^&*-_';
-            const chars = lower + upper + digits + (includeSymbols ? symbols : '');
-            const values = new Uint32Array(length);
+            const chars = lower + upper + digits + (this.genSymbols ? symbols : '');
+            const values = new Uint32Array(this.genLength);
             crypto.getRandomValues(values);
             return Array.from(values, v => chars[v % chars.length]).join('');
         },
