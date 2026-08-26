@@ -9,11 +9,17 @@ use Illuminate\Http\Request;
 class CredentialController extends Controller
 {
     /**
-     * 拡張機能から呼ばれるエンドポイント
+     * 拡張機能/Shortcutsから呼ばれるエンドポイント
      * GET /api/credentials?domain=example.com
      *
      * 指定ドメインに一致する全ブックマークに紐づく認証情報を横断的に返す
      * (同じドメインで複数のブックマーク/複数アカウントがあっても全件返す)
+     *
+     * パフォーマンス上の注意:
+     * 以前はユーザーの全ブックマーク(数百件規模)を毎回まるごと取得してから
+     * PHP側でdomainアクセサと比較していたため、ブックマークが増えるほど遅くなっていた。
+     * normalizeUrl()により保存時点でURLは "scheme://host[:port][/path]" 形式に
+     * 正規化されているため、この形に対応する前方一致LIKEでSQL側に絞り込みを移す。
      */
     public function index(Request $request)
     {
@@ -21,13 +27,28 @@ class CredentialController extends Controller
             'domain' => ['required', 'string'],
         ]);
 
-        $targetDomain = strtolower($validated['domain']);
+        $targetDomain = $validated['domain'];
 
-        $credentials = Bookmark::where('user_id', $request->user()->id)
+        $bookmarks = Bookmark::where('user_id', $request->user()->id)
+            ->where(function ($query) use ($targetDomain) {
+                $query->where('url', 'like', "http://{$targetDomain}")
+                    ->orWhere('url', 'like', "http://{$targetDomain}/%")
+                    ->orWhere('url', 'like', "https://{$targetDomain}")
+                    ->orWhere('url', 'like', "https://{$targetDomain}/%");
+            })
             ->with('credentials')
-            ->get()
-            ->filter(fn (Bookmark $bookmark) => strtolower((string) $bookmark->domain) === $targetDomain)
-            ->flatMap(fn (Bookmark $bookmark) => $bookmark->credentials)
+            ->get();
+
+        $credentials = $bookmarks
+            ->flatMap(function (Bookmark $bookmark) {
+                // toApiArray() 内の $this->bookmark->title フォールバックで
+                // 追加クエリ(N+1)が発生しないよう、既に手元にあるbookmarkを明示的に紐付ける
+                return $bookmark->credentials->map(function (Credential $credential) use ($bookmark) {
+                    $credential->setRelation('bookmark', $bookmark);
+
+                    return $credential;
+                });
+            })
             ->map(fn (Credential $credential) => $credential->toApiArray())
             ->values();
 
