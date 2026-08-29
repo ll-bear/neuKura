@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>neuKura</title>
+  <style>
+    body {
+      width: 340px;
+      max-height: 480px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    #app { padding: 12px; }
+    h1 {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .chip {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .chip.active { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+    #list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .card:hover { background: #f1f5f9; }
+    .card.match { border-color: #6ee7b7; box-shadow: 0 0 0 1px #6ee7b7 inset; }
+    .badge {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: #64748b; flex-shrink: 0; overflow: hidden;
+    }
+    .badge img { width: 100%; height: 100%; object-fit: cover; }
+    .meta { min-width: 0; flex: 1; }
+    .meta p { margin: 0; }
+    .title { font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sub, .user { font-size: 10.5px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 24px 0; }
+    #footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+    #save-current {
+      width: 100%; font-size: 12px; padding: 8px; border-radius: 8px;
+      border: 1px dashed #94a3b8; background: transparent; color: #64748b; cursor: pointer;
+    }
+    #open-web {
+      display: block; text-align: center; font-size: 11px; color: #8b5cf6;
+      margin-top: 8px; text-decoration: none;
+    }
+    #toast {
+      display: none; margin-top: 8px; font-size: 12px; text-align: center;
+      background: #059669; color: #fff; padding: 6px; border-radius: 8px;
+    }
+    #save-panel {
+      display: none; margin-top: 8px; padding: 10px; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 10px;
+    }
+    #save-panel label { display: block; font-size: 10.5px; color: #64748b; margin: 6px 0 3px; }
+    #save-panel input {
+      width: 100%; box-sizing: border-box; font-size: 12px; padding: 6px 8px;
+      border: 1px solid #e2e8f0; border-radius: 6px;
+    }
+    .row { display: flex; gap: 6px; }
+    .row input { flex: 1; }
+    #save-panel button {
+      font-size: 11px; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+      background: #f8fafc; cursor: pointer; white-space: nowrap;
+    }
+    #save-panel .actions { display: flex; gap: 6px; margin-top: 8px; }
+    #save-panel .actions button:last-child {
+      flex: 1; background: #d1fae5; border-color: #6ee7b7; color: #047857; font-weight: 600;
+    }
+    #save-panel .actions button:first-child { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="login-view" style="padding:16px">
+    <h1 style="margin:0 0 12px">neuKuraにログイン</h1>
+    <label style="display:block;font-size:11px;color:#64748b;margin-bottom:3px">メールアドレス</label>
+    <input type="email" id="login-email" style="width:100%;box-sizing:border-box;font-size:12px;padding:7px 9px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:10px">
+    <label style="display:block;font-size:11px;color:#64748b;margin-bottom:3px">パスワード</label>
+    <input type="password" id="login-password" style="width:100%;box-sizing:border-box;font-size:12px;padding:7px 9px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:12px">
+    <button id="login-submit" style="width:100%;font-size:12px;padding:9px;border-radius:8px;border:1px solid #c4b5fd;background:#ede9fe;color:#6d28d9;font-weight:600;cursor:pointer">ログイン</button>
+    <p id="login-error" style="display:none;color:#dc2626;font-size:11px;margin-top:8px"></p>
+  </div>
+
+  <div id="app" style="display:none">
+    <h1>保存済み情報から選択</h1>
+    <div class="chips" id="chips"></div>
+    <div id="list"></div>
+    <p id="empty" style="display:none">該当する項目がありません</p>
+    <div id="footer">
+      <button id="save-current">このページを新規保存</button>
+      <div id="save-panel">
+        <label>ID / メールアドレス</label>
+        <input type="text" id="sp-username" placeholder="user@example.com">
+        <label>パスワード</label>
+        <div class="row">
+          <input type="text" id="sp-password" placeholder="パスワード">
+          <button id="sp-generate" type="button">自動生成</button>
+        </div>
+        <div class="actions">
+          <button id="sp-cancel" type="button">キャンセル</button>
+          <button id="sp-save" type="button">保存して入力</button>
+        </div>
+      </div>
+      <a id="open-web" href="#" target="_blank">Wi-Fi/ライセンスキーなどはWeb版で管理 →</a>
+      <button id="logout-btn" style="width:100%;margin-top:8px;font-size:10.5px;padding:5px;border-radius:6px;border:none;background:transparent;color:#94a3b8;cursor:pointer">ログアウト</button>
+    </div>
+    <div id="toast"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
