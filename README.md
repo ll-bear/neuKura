@@ -1,59 +1,76 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# neuKura
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+ブックマークと認証情報（パスワード・Wi-Fiキー・ライセンスキーなど）を、
+ひとつのアプリでまとめて管理するための個人開発アプリです。
 
-## About Laravel
+意味検索によるブックマーク検索、Chrome拡張とiOS Shortcutsを使った
+クロスプラットフォームでのログイン自動入力に対応しています。
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 主な機能
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- ブックマークの登録・管理
+  - AI（多言語対応の埋め込みモデル）による意味検索
+  - favicon の自動取得（バックグラウンドジョブ）
+- 認証情報の管理
+  - URLに紐づく認証情報（`credentials`）と、URLを持たない情報（`secrets`）を分離管理
+  - Web Crypto API を使ったブラウザ完結のパスワード生成
+  - 1Password からの CSV インポート
+- クロスプラットフォーム対応
+  - Chrome拡張（Manifest V3）によるログインフォームの自動検知・自動入力
+  - iOS Shortcuts からの Safari フォーム自動入力
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 使用技術
 
-## Learning Laravel
+| 分類 | 技術 |
+|---|---|
+| バックエンド | Laravel（Service + Repositoryパターン） |
+| データベース | MySQL |
+| 認証 | Laravel Sanctum（カスタム ability スコープ） |
+| フロントエンド | Alpine.js |
+| 意味検索 | multilingual-e5-large（埋め込みモデル）+ コサイン類似度 |
+| 拡張機能 | Chrome Extension（Manifest V3） |
+| 自動化 | iOS Shortcuts |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## セットアップ
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+# リポジトリを取得
+git clone https://github.com/ll-bear/neukura.git
+cd neukura
 
-## Laravel Sponsors
+# 依存パッケージのインストール
+composer install
+npm install
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# 環境設定
+cp .env.example .env
+php artisan key:generate
 
-### Premium Partners
+# .env を編集してDB接続情報などを設定してください
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# マイグレーション
+php artisan migrate
 
-## Contributing
+# フロントエンドビルド
+npm run build
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 開発サーバー起動
+php artisan serve
+```
 
-## Code of Conduct
+Chrome拡張は `extension/` ディレクトリ以下にあります。
+Chromeの「拡張機能」→「デベロッパーモード」→「パッケージ化されていない
+拡張機能を読み込む」から読み込んでください。
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## ディレクトリ構成（抜粋）
 
-## Security Vulnerabilities
+```
+app/
+  Services/       # ビジネスロジック
+  Repositories/   # データアクセス層
+extension/        # Chrome拡張（Manifest V3）
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## ライセンス
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+個人学習・ポートフォリオ用途のプロジェクトです。
